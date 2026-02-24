@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../app_localizations.dart';
+import '../app_settings.dart';
 
 class AddColorPickerPanelScreen extends StatefulWidget {
   const AddColorPickerPanelScreen({super.key});
@@ -23,15 +26,27 @@ class _AddColorPickerPanelScreenState extends State<AddColorPickerPanelScreen> {
   final List<int> _qosOptions   = [0, 1, 2];
 
   @override
-  void dispose() { _panelNameCtrl.dispose(); _topicCtrl.dispose(); _subscribeTopicCtrl.dispose(); super.dispose(); }
+  void dispose() {
+    _panelNameCtrl.dispose();
+    _topicCtrl.dispose();
+    _subscribeTopicCtrl.dispose();
+    super.dispose();
+  }
 
   void _create() {
     if (_formKey.currentState!.validate()) {
       Navigator.pop(context, {
-        'type': 'Color Picker', 'label': _panelNameCtrl.text.trim(),
-        'topic': _topicCtrl.text.trim(), 'subscribeTopic': _subscribeTopicCtrl.text.trim(),
-        'addAlpha': _addAlpha, 'hideColorValue': _hideColorValue,
-        'retain': _retain, 'qos': _qos,
+        'type': 'Color Picker',
+        'label': _panelNameCtrl.text.trim(),
+        'topic': _topicCtrl.text.trim(),
+        'subscribeTopic': _subscribeTopicCtrl.text.trim(),
+        'addAlpha': _addAlpha,
+        'hideColorValue': _hideColorValue,
+        'payloadIsJson': _payloadIsJson,
+        'showReceivedTimestamp': _showReceivedTimestamp,
+        'showSentTimestamp': _showSentTimestamp,
+        'retain': _retain,
+        'qos': _qos,
       });
     }
   }
@@ -79,22 +94,24 @@ class _AddColorPickerPanelScreenState extends State<AddColorPickerPanelScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context.watch<AppSettings>().languageCode);
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(backgroundColor: Colors.white, elevation: 0,
           leading: IconButton(icon: const Icon(Icons.arrow_back, color: Colors.black), onPressed: () => Navigator.pop(context)),
-          title: const Text('Add a Color Picker panel', style: TextStyle(color: Colors.black, fontSize: 20, fontWeight: FontWeight.w600)),
+          title: Text(l.addColorPickerPanel, style: const TextStyle(color: Colors.black, fontSize: 18, fontWeight: FontWeight.bold)),
           bottom: PreferredSize(preferredSize: const Size.fromHeight(1), child: Container(color: Colors.grey.shade300, height: 1))),
       body: Form(key: _formKey, child: ListView(children: [
-        _fieldRow('Panel name', _panelNameCtrl, required: true, validator: (v) => (v==null||v.isEmpty) ? 'Required' : null),
-        _checkRow('Disable dashboard prefix topic', _disableDashboardPrefix, (v) => setState(() => _disableDashboardPrefix = v), showHelp: true),
-        _fieldRow('Topic', _topicCtrl, required: true, validator: (v) => (v==null||v.isEmpty) ? 'Required' : null),
-        _fieldRow('Subscribe Topic', _subscribeTopicCtrl, showHelp: true),
-        _checkRow('Add alpha', _addAlpha, (v) => setState(() => _addAlpha = v)),
-        _checkRow('Hide color value', _hideColorValue, (v) => setState(() => _hideColorValue = v)),
-        _checkRow('Payload is JSON Data', _payloadIsJson, (v) => setState(() => _payloadIsJson = v)),
-        _checkRow('Show received timestamp', _showReceivedTimestamp, (v) => setState(() => _showReceivedTimestamp = v)),
-        _checkRow('Show sent timestamp', _showSentTimestamp, (v) => setState(() => _showSentTimestamp = v)),
+        _fieldRow(l.panelName, _panelNameCtrl, required: true, validator: (v) => (v==null||v.isEmpty) ? l.required : null),
+        _checkRow(l.disableDashboardPrefix, _disableDashboardPrefix, (v) => setState(() => _disableDashboardPrefix = v), showHelp: true),
+        _fieldRow(l.topic, _topicCtrl, required: true, validator: (v) => (v==null||v.isEmpty) ? l.required : null),
+        _fieldRow(l.subscribeTopic, _subscribeTopicCtrl, showHelp: true),
+        _checkRow(l.addAlpha, _addAlpha, (v) => setState(() => _addAlpha = v)),
+        _checkRow(l.hideColorValue, _hideColorValue, (v) => setState(() => _hideColorValue = v)),
+        _checkRow(l.payloadIsJson, _payloadIsJson, (v) => setState(() => _payloadIsJson = v)),
+        _checkRow(l.showReceivedTimestamp, _showReceivedTimestamp, (v) => setState(() => _showReceivedTimestamp = v)),
+        _checkRow(l.showSentTimestamp, _showSentTimestamp, (v) => setState(() => _showSentTimestamp = v)),
         Column(children: [
           Padding(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6), child: Row(children: [
             SizedBox(width: 28, height: 28, child: Checkbox(value: _retain, onChanged: (v) => setState(() => _retain = v ?? false),
@@ -102,7 +119,7 @@ class _AddColorPickerPanelScreenState extends State<AddColorPickerPanelScreen> {
                 side: const BorderSide(color: Colors.black54, width: 1.5),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(2)))),
             const SizedBox(width: 12),
-            const Text('Retain', style: TextStyle(fontSize: 15, color: Colors.black87)),
+            Text(l.retain, style: const TextStyle(fontSize: 15, color: Colors.black87)),
             const Spacer(),
             const Text('QoS', style: TextStyle(fontSize: 15, color: Colors.black87)),
             const SizedBox(width: 8),
@@ -116,14 +133,13 @@ class _AddColorPickerPanelScreenState extends State<AddColorPickerPanelScreen> {
         ]),
         Padding(padding: const EdgeInsets.fromLTRB(16, 24, 16, 36), child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
           SizedBox(width: 130, height: 44, child: OutlinedButton(
-              style: OutlinedButton.styleFrom(side: const BorderSide(color: Colors.grey), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4))),
               onPressed: () => Navigator.pop(context),
-              child: const Text('CANCEL', style: TextStyle(color: Colors.black87, fontWeight: FontWeight.w600, fontSize: 14, letterSpacing: 0.8)))),
+              child: Text(l.cancel, style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.w600, fontSize: 14)))),
           const SizedBox(width: 16),
           SizedBox(width: 130, height: 44, child: ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1565C0), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)), elevation: 2),
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1565C0)),
               onPressed: _create,
-              child: const Text('CREATE', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14, letterSpacing: 0.8)))),
+              child: Text(l.create, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14)))),
         ])),
       ])),
     );

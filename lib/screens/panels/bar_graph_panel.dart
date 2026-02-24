@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../app_localizations.dart';
+import '../app_settings.dart';
 
 class AddBarGraphPanelScreen extends StatefulWidget {
   const AddBarGraphPanelScreen({super.key});
@@ -13,7 +16,6 @@ class _AddBarGraphPanelScreenState extends State<AddBarGraphPanelScreen> {
 
   bool   _disableDashboardPrefix = false;
   bool   _defineRange            = false;
-  bool   _retain                 = false;
   String _orientation            = 'Vertical';
   int    _qos                    = 0;
 
@@ -24,7 +26,10 @@ class _AddBarGraphPanelScreenState extends State<AddBarGraphPanelScreen> {
   final List<Map<String, dynamic>> _bars = [];
 
   @override
-  void initState() { super.initState(); _addBar(); }
+  void initState() {
+    super.initState();
+    _addBar();
+  }
 
   void _addBar() {
     final idx = _bars.length;
@@ -79,26 +84,28 @@ class _AddBarGraphPanelScreenState extends State<AddBarGraphPanelScreen> {
     }
   }
 
-  Widget _d() => const Divider(height: 1, thickness: 1, color: Color(0xFFE0E0E0));
-  Widget _help() => Container(width: 28, height: 28, decoration: const BoxDecoration(color: Color(0xFF1E88E5), shape: BoxShape.circle), child: const Icon(Icons.question_mark, color: Colors.white, size: 15));
+  Widget _divider() => const Divider(height: 1, thickness: 1, color: Color(0xFFE0E0E0));
+  Widget _helpIcon() => Container(width: 28, height: 28, decoration: const BoxDecoration(color: Color(0xFF1E88E5), shape: BoxShape.circle), child: const Icon(Icons.question_mark, color: Colors.white, size: 15));
 
-  Widget _field(String label, TextEditingController ctrl, {bool req = false, String? Function(String?)? val}) {
+  Widget _fieldRow(String label, TextEditingController ctrl, {bool required = false, bool showHelp = false, String? Function(String?)? validator, TextInputType? keyboardType}) {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Padding(padding: const EdgeInsets.fromLTRB(16, 18, 16, 0), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        RichText(text: TextSpan(text: label, style: const TextStyle(fontSize: 15, color: Colors.black87),
-            children: req ? const [TextSpan(text: ' *', style: TextStyle(color: Colors.red))] : [])),
-        TextFormField(controller: ctrl, validator: val, style: const TextStyle(fontSize: 15, color: Colors.black87),
-            decoration: const InputDecoration(isDense: true, contentPadding: EdgeInsets.only(top: 6, bottom: 8),
-                enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.black26)),
-                focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Color(0xFF1E88E5))),
-                errorBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.red)),
-                focusedErrorBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.red)))),
+      Padding(padding: const EdgeInsets.fromLTRB(16, 18, 16, 0), child: Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+          RichText(text: TextSpan(text: label, style: const TextStyle(fontSize: 15, color: Colors.black87, fontWeight: FontWeight.w400),
+              children: required ? const [TextSpan(text: ' *', style: TextStyle(color: Colors.red))] : [])),
+          TextFormField(controller: ctrl, validator: validator, keyboardType: keyboardType, style: const TextStyle(fontSize: 15, color: Colors.black87),
+              decoration: const InputDecoration(isDense: true, contentPadding: EdgeInsets.only(top: 6, bottom: 8),
+                  enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.black26)),
+                  focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Color(0xFF1E88E5))),
+                  errorBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.red)))),
+        ])),
+        if (showHelp) Padding(padding: const EdgeInsets.only(left: 10, bottom: 8), child: _helpIcon()),
       ])),
-      _d(),
+      _divider(),
     ]);
   }
 
-  Widget _check(String label, bool value, ValueChanged<bool> onChanged, {bool help = false, bool enabled = true}) {
+  Widget _checkRow(String label, bool value, ValueChanged<bool> onChanged, {bool showHelp = false, bool enabled = true}) {
     return Column(children: [
       InkWell(onTap: enabled ? () => onChanged(!value) : null,
           child: Padding(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10), child: Row(children: [
@@ -108,23 +115,25 @@ class _AddBarGraphPanelScreenState extends State<AddBarGraphPanelScreen> {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(2)))),
             const SizedBox(width: 12),
             Expanded(child: Text(label, style: TextStyle(fontSize: 15, color: enabled ? Colors.black87 : Colors.black38))),
-            if (help) _help(),
+            if (showHelp) _helpIcon(),
           ]))),
-      _d(),
+      _divider(),
     ]);
   }
 
-  Widget _barBlock(int idx) {
+  Widget _barBlock(int idx, AppLocalizations l) {
     final b = _bars[idx];
     final color = b['color'] as Color;
     final hex = '#${color.value.toRadixString(16).substring(2).toUpperCase()}';
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      _field('Topic for bar ${idx + 1}', b['topic'] as TextEditingController, req: true, val: (v) => (v==null||v.isEmpty) ? 'Required' : null),
-      _field('Label for bar ${idx + 1}', b['label'] as TextEditingController),
+      _fieldRow('${l.topic} (${l.bar} ${idx + 1})', b['topic'] as TextEditingController, required: true, validator: (v) => (v==null||v.isEmpty) ? l.required : null),
+      _fieldRow('${l.label} (${l.bar} ${idx + 1})', b['label'] as TextEditingController),
+
+      // Factor & Decimal row
       Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Padding(padding: const EdgeInsets.fromLTRB(16, 18, 16, 0), child: Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const Text('Factor', style: TextStyle(fontSize: 13, color: Colors.black54)),
+            Text(l.factor, style: const TextStyle(fontSize: 15, color: Colors.black87)),
             TextFormField(controller: b['factor'] as TextEditingController, keyboardType: TextInputType.number, style: const TextStyle(fontSize: 15),
                 decoration: const InputDecoration(isDense: true, contentPadding: EdgeInsets.only(top: 4, bottom: 8),
                     enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.black26)),
@@ -132,59 +141,70 @@ class _AddBarGraphPanelScreenState extends State<AddBarGraphPanelScreen> {
           ])),
           const SizedBox(width: 24),
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const Text('Decimal precision', style: TextStyle(fontSize: 15, color: Colors.black87)),
+            Text(l.decimalPrecision, style: const TextStyle(fontSize: 15, color: Colors.black87)),
             TextFormField(controller: b['decimalPrecision'] as TextEditingController, keyboardType: TextInputType.number, style: const TextStyle(fontSize: 15),
                 decoration: const InputDecoration(isDense: true, contentPadding: EdgeInsets.only(top: 4, bottom: 8),
                     enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.black26)),
                     focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Color(0xFF1E88E5))))),
           ])),
         ])),
-        _d(),
+        _divider(),
       ]),
+
+      // Color picker row
       Column(children: [
         Padding(padding: const EdgeInsets.fromLTRB(16, 14, 16, 10), child: Row(children: [
           GestureDetector(onTap: () => _pickBarColor(idx),
               child: Container(width: 36, height: 36, decoration: BoxDecoration(color: color, shape: BoxShape.circle))),
           const SizedBox(width: 12),
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const Text('Bar color', style: TextStyle(fontSize: 13, color: Colors.black54)),
+            Text(l.barColor, style: const TextStyle(fontSize: 13, color: Colors.black54)),
             Container(decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: Colors.black26))),
                 child: Text(hex, style: const TextStyle(fontSize: 15, color: Colors.black87))),
           ])),
         ])),
-        _d(),
+        _divider(),
       ]),
-      _check('Enable notification or alarm', b['enableNotif'] as bool, (v) => setState(() => b['enableNotif'] = v), help: true, enabled: false),
-      _check('Payload is JSON Data', b['payloadIsJson'] as bool, (v) => setState(() => b['payloadIsJson'] = v)),
+
+      _checkRow(l.enableNotification, b['enableNotif'] as bool, (v) => setState(() => b['enableNotif'] = v), showHelp: true, enabled: false),
+      _checkRow(l.payloadIsJson, b['payloadIsJson'] as bool, (v) => setState(() => b['payloadIsJson'] = v)),
     ]);
   }
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context.watch<AppSettings>().languageCode);
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(backgroundColor: Colors.white, elevation: 0,
           leading: IconButton(icon: const Icon(Icons.arrow_back, color: Colors.black), onPressed: () => Navigator.pop(context)),
-          title: const Text('Add a Bar Graph panel', style: TextStyle(color: Colors.black, fontSize: 20, fontWeight: FontWeight.w600)),
+          title: Text(l.addBarGraphPanel, style: const TextStyle(color: Colors.black, fontSize: 20, fontWeight: FontWeight.w600)),
           bottom: PreferredSize(preferredSize: const Size.fromHeight(1), child: Container(color: Colors.grey.shade300, height: 1))),
       body: Form(key: _formKey, child: ListView(children: [
-        _field('Panel name', _panelNameCtrl, req: true, val: (v) => (v==null||v.isEmpty) ? 'Required' : null),
-        _check('Disable dashboard prefix topic', _disableDashboardPrefix, (v) => setState(() => _disableDashboardPrefix = v)),
-        ...List.generate(_bars.length, (i) => _barBlock(i)),
+        _fieldRow(l.panelName, _panelNameCtrl, required: true, validator: (v) => (v==null||v.isEmpty) ? l.required : null),
+        _checkRow(l.disableDashboardPrefix, _disableDashboardPrefix, (v) => setState(() => _disableDashboardPrefix = v), showHelp: true),
+
+        ...List.generate(_bars.length, (i) => _barBlock(i, l)),
+
+        // Add more bars
         Column(children: [
           Padding(padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14), child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-            const Text('Add more bar', style: TextStyle(fontSize: 15, color: Colors.black87)),
+            Text(l.addMoreBar, style: const TextStyle(fontSize: 15, color: Colors.black87)),
             GestureDetector(onTap: () => setState(() => _addBar()),
                 child: Container(width: 44, height: 44, decoration: const BoxDecoration(color: Colors.grey, shape: BoxShape.circle),
                     child: const Icon(Icons.add, color: Colors.white, size: 26))),
           ])),
-          _d(),
+          _divider(),
         ]),
-        _check('Define range', _defineRange, (v) => setState(() => _defineRange = v)),
+
+        _checkRow(l.defineRange, _defineRange, (v) => setState(() => _defineRange = v)),
+
+        // Unit and Orientation
         Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Padding(padding: const EdgeInsets.fromLTRB(16, 18, 16, 0), child: Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const Text('Unit', style: TextStyle(fontSize: 15, color: Colors.black87)),
+              Text(l.unit, style: const TextStyle(fontSize: 15, color: Colors.black87)),
               TextFormField(controller: _unitCtrl, style: const TextStyle(fontSize: 15),
                   decoration: const InputDecoration(isDense: true, contentPadding: EdgeInsets.only(top: 4, bottom: 8),
                       enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.black26)),
@@ -192,7 +212,7 @@ class _AddBarGraphPanelScreenState extends State<AddBarGraphPanelScreen> {
             ])),
             const SizedBox(width: 24),
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const Text('Orientation', style: TextStyle(fontSize: 13, color: Colors.black54)),
+              Text(l.orientation, style: const TextStyle(fontSize: 13, color: Colors.black54)),
               DropdownButtonFormField<String>(value: _orientation, style: const TextStyle(fontSize: 15, color: Colors.black87),
                   decoration: const InputDecoration(isDense: true, contentPadding: EdgeInsets.only(top: 4, bottom: 8),
                       enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.black26))),
@@ -200,12 +220,14 @@ class _AddBarGraphPanelScreenState extends State<AddBarGraphPanelScreen> {
                   onChanged: (v) => setState(() => _orientation = v!)),
             ])),
           ])),
-          _d(),
+          _divider(),
         ]),
+
+        // QoS Row
         Column(children: [
           Padding(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6), child: Row(children: [
             const Spacer(),
-            const Text('QoS', style: TextStyle(fontSize: 15, color: Colors.black87)),
+            Text(l.qos, style: const TextStyle(fontSize: 15, color: Colors.black87)),
             const SizedBox(width: 8),
             DropdownButton<int>(value: _qos, underline: Container(height: 1, color: Colors.black26),
                 style: const TextStyle(fontSize: 15, color: Colors.black87),
@@ -213,18 +235,20 @@ class _AddBarGraphPanelScreenState extends State<AddBarGraphPanelScreen> {
                 items: _qosOptions.map((q) => DropdownMenuItem(value: q, child: Text('$q'))).toList(),
                 onChanged: (v) => setState(() => _qos = v!)),
           ])),
-          _d(),
+          _divider(),
         ]),
+
+        // Action Buttons
         Padding(padding: const EdgeInsets.fromLTRB(16, 24, 16, 36), child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
           SizedBox(width: 130, height: 44, child: OutlinedButton(
               style: OutlinedButton.styleFrom(side: const BorderSide(color: Colors.grey), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4))),
               onPressed: () => Navigator.pop(context),
-              child: const Text('CANCEL', style: TextStyle(color: Colors.black87, fontWeight: FontWeight.w600, fontSize: 14, letterSpacing: 0.8)))),
+              child: Text(l.cancel, style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.w600, fontSize: 14, letterSpacing: 0.8)))),
           const SizedBox(width: 16),
           SizedBox(width: 130, height: 44, child: ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1565C0), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)), elevation: 2),
               onPressed: _create,
-              child: const Text('CREATE', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14, letterSpacing: 0.8)))),
+              child: Text(l.create, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14, letterSpacing: 0.8)))),
         ])),
       ])),
     );

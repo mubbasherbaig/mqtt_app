@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import '../app_localizations.dart';
+import '../app_settings.dart';
 
 class AddGaugePanelScreen extends StatefulWidget {
   const AddGaugePanelScreen({super.key});
@@ -135,48 +139,44 @@ class _AddGaugePanelScreenState extends State<AddGaugePanelScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context.watch<AppSettings>().languageCode);
+
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(backgroundColor: Colors.white, elevation: 0,
+      appBar: AppBar(
+          backgroundColor: Colors.white, elevation: 0,
           leading: IconButton(icon: const Icon(Icons.arrow_back, color: Colors.black), onPressed: () => Navigator.pop(context)),
-          title: const Text('Add a Gauge panel', style: TextStyle(color: Colors.black, fontSize: 20, fontWeight: FontWeight.w600)),
+          title: Text(l.addGaugePanel, style: const TextStyle(color: Colors.black, fontSize: 18, fontWeight: FontWeight.bold)),
           bottom: PreferredSize(preferredSize: const Size.fromHeight(1), child: Container(color: Colors.grey.shade300, height: 1))),
       body: Form(key: _formKey, child: ListView(children: [
-        _fieldRow('Panel name', _panelNameCtrl, required: true, validator: (v) => (v==null||v.isEmpty) ? 'Required' : null),
-        _checkRow('Disable dashboard prefix topic', _disableDashboardPrefix, (v) => setState(() => _disableDashboardPrefix = v), showHelp: true),
-        _fieldRow('Topic', _topicCtrl, required: true, validator: (v) => (v==null||v.isEmpty) ? 'Required' : null),
-        _doubleFieldRow('Payload min', _payloadMinCtrl, true, 'Payload max', _payloadMaxCtrl, true,
-            v1: (v) => (v==null||v.isEmpty) ? 'Required' : null, v2: (v) => (v==null||v.isEmpty) ? 'Required' : null),
-        _doubleFieldRow('Factor', _factorCtrl, false, 'Decimal precision', _decimalPrecisionCtrl, false),
+        _fieldRow(l.panelName, _panelNameCtrl, required: true, validator: (v) => (v==null||v.isEmpty) ? l.required : null),
+        _checkRow(l.disableDashboardPrefix, _disableDashboardPrefix, (v) => setState(() => _disableDashboardPrefix = v), showHelp: true),
+        _fieldRow(l.topic, _topicCtrl, required: true, validator: (v) => (v==null||v.isEmpty) ? l.required : null),
 
-        // Arc color section
+        _doubleFieldRow(l.payloadMin, _payloadMinCtrl, true, l.payloadMax, _payloadMaxCtrl, true,
+            v1: (v) => (v==null||v.isEmpty) ? l.required : null, v2: (v) => (v==null||v.isEmpty) ? l.required : null),
+
+        _doubleFieldRow(l.factor, _factorCtrl, false, l.decimal, _decimalPrecisionCtrl, false),
+
+        // Localized Arc color section
         Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Padding(padding: EdgeInsets.fromLTRB(16, 18, 16, 10),
-              child: Text('Arc color', style: TextStyle(fontSize: 15, color: Colors.black87))),
+          Padding(padding: const EdgeInsets.fromLTRB(16, 18, 16, 10),
+              child: Text(l.arcColor, style: const TextStyle(fontSize: 15, color: Colors.black87))),
           Padding(padding: const EdgeInsets.fromLTRB(16, 0, 16, 12), child: Row(children: [
-            // Color 1 (green) + threshold field
             Expanded(child: Column(children: [
               GestureDetector(onTap: () => _pickArcColor(0),
                   child: Container(width: 44, height: 44, decoration: BoxDecoration(color: _arcColor1, shape: BoxShape.circle))),
               TextFormField(controller: _threshold1Ctrl, keyboardType: TextInputType.number,
-                  style: const TextStyle(fontSize: 14),
-                  decoration: const InputDecoration(isDense: true, contentPadding: EdgeInsets.only(top: 4, bottom: 6),
-                      enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.black26)),
-                      focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Color(0xFF1E88E5))))),
+                  decoration: const InputDecoration(isDense: true)),
             ])),
             const SizedBox(width: 8),
-            // Color 2 (yellow) - middle, no threshold shown between
             Expanded(child: Column(children: [
               GestureDetector(onTap: () => _pickArcColor(1),
                   child: Container(width: 44, height: 44, decoration: BoxDecoration(color: _arcColor2, shape: BoxShape.circle))),
               TextFormField(controller: _threshold2Ctrl, keyboardType: TextInputType.number,
-                  style: const TextStyle(fontSize: 14),
-                  decoration: const InputDecoration(isDense: true, contentPadding: EdgeInsets.only(top: 4, bottom: 6),
-                      enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.black26)),
-                      focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Color(0xFF1E88E5))))),
+                  decoration: const InputDecoration(isDense: true)),
             ])),
             const SizedBox(width: 8),
-            // Color 3 (orange/red) - no field
             Expanded(child: Column(children: [
               GestureDetector(onTap: () => _pickArcColor(2),
                   child: Container(width: 44, height: 44, decoration: BoxDecoration(color: _arcColor3, shape: BoxShape.circle))),
@@ -186,10 +186,9 @@ class _AddGaugePanelScreenState extends State<AddGaugePanelScreen> {
           _divider(),
         ]),
 
-        _fieldRow('Unit', _unitCtrl),
-        _checkRow('Enable notification or alarm', _enableNotification, (v) => setState(() => _enableNotification = v), showHelp: true, enabled: false),
-        _checkRow('Payload is JSON Data', _payloadIsJson, (v) => setState(() => _payloadIsJson = v)),
-        _checkRow('Show received timestamp', _showReceivedTimestamp, (v) => setState(() => _showReceivedTimestamp = v)),
+        _fieldRow(l.unit, _unitCtrl),
+        _checkRow(l.payloadIsJson, _payloadIsJson, (v) => setState(() => _payloadIsJson = v)),
+        _checkRow(l.showReceivedTimestamp, _showReceivedTimestamp, (v) => setState(() => _showReceivedTimestamp = v)),
         Column(children: [
           Padding(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6), child: Row(children: [
             const Spacer(),

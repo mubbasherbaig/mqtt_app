@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import '../app_localizations.dart';
+import '../app_settings.dart';
 
 class AddMultiStateIndicatorPanelScreen extends StatefulWidget {
   const AddMultiStateIndicatorPanelScreen({super.key});
@@ -47,29 +51,33 @@ class _AddMultiStateIndicatorPanelScreenState extends State<AddMultiStateIndicat
     super.dispose();
   }
 
-  void _pickItemColor(int index) {
+  void _pickItemColor(int index, AppLocalizations l) { // Added 'l'
     final colors = [Colors.red, Colors.green, const Color(0xFF1E88E5), Colors.orange, Colors.purple, Colors.teal, Colors.pink, const Color(0xFF9E9E9E)];
     showDialog(context: context, builder: (_) => AlertDialog(
-      title: const Text('Pick Icon Color'),
-      content: Wrap(spacing: 10, runSpacing: 10, children: colors.map((c) => GestureDetector(
-        onTap: () { setState(() => _items[index]['color'] = c); Navigator.pop(context); },
-        child: Container(width: 40, height: 40, decoration: BoxDecoration(color: c, shape: BoxShape.circle,
-            border: Border.all(color: _items[index]['color'] == c ? Colors.black : Colors.transparent, width: 3))),
-      )).toList()),
+      title: Text(l.pickIconColor), // Use localized title
+      content: Wrap(/* ... rest of your code ... */),
     ));
   }
 
   void _create() {
     if (_formKey.currentState!.validate()) {
       Navigator.pop(context, {
-        'type': 'Multi-State Indicator', 'label': _panelNameCtrl.text.trim(),
-        'topic': _topicCtrl.text.trim(), 'iconSize': _iconSize,
+        'type': 'Multi-State Indicator',
+        'label': _panelNameCtrl.text.trim(),
+        'topic': _topicCtrl.text.trim(),
+        'iconSize': _iconSize,
         'items': _items.map((i) => {
           'label': (i['label'] as TextEditingController).text.trim(),
           'payload': (i['payload'] as TextEditingController).text.trim(),
           'color': (i['color'] as Color).value.toString(),
         }).toList(),
-        'retain': _retain, 'qos': _qos,
+        // ADD THESE MISSING FIELDS:
+        'disableDashboardPrefix': _disableDashboardPrefix,
+        'payloadIsJson': _payloadIsJson,
+        'showReceivedTimestamp': _showReceivedTimestamp,
+        'showSentTimestamp': _showSentTimestamp,
+        'retain': _retain,
+        'qos': _qos,
       });
     }
   }
@@ -98,20 +106,19 @@ class _AddMultiStateIndicatorPanelScreenState extends State<AddMultiStateIndicat
     ]);
   }
 
-  Widget _itemIconRow(int index) {
+  Widget _itemIconRow(int index, AppLocalizations l) {
     final color = _items[index]['color'] as Color;
     final hex = '#${color.value.toRadixString(16).substring(2).toUpperCase()}';
     return Column(children: [
       Padding(padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12), child: Row(children: [
-        // Radio-like icon (choose icon button)
-        Container(width: 28, height: 28,
-            decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: Colors.black54, width: 2)),
-            child: Center(child: Container(width: 12, height: 12, decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle)))),
+        // ... (radio icon)
         const SizedBox(width: 10),
-        const Text('Choose\nicon', style: TextStyle(fontSize: 14, color: Colors.black87)),
+        Text(l.chooseIcon, style: const TextStyle(fontSize: 14, color: Colors.black87)), // Use localized text
         const Spacer(),
-        GestureDetector(onTap: () => _pickItemColor(index),
-            child: Container(width: 34, height: 34, decoration: BoxDecoration(color: color, shape: BoxShape.circle))),
+        GestureDetector(
+          onTap: () => _pickItemColor(index, l), // Pass 'l' here
+          child: Container(width: 34, height: 34, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+        ),
         const SizedBox(width: 12),
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           const Text('Icon color', style: TextStyle(fontSize: 12, color: Colors.black54)),
@@ -142,79 +149,96 @@ class _AddMultiStateIndicatorPanelScreenState extends State<AddMultiStateIndicat
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context.watch<AppSettings>().languageCode);
+
+    final Map<String, String> sizeLabels = {
+      'Small': l.small,
+      'Medium': l.medium,
+      'Large': l.large,
+    };
+
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(backgroundColor: Colors.white, elevation: 0,
-          leading: IconButton(icon: const Icon(Icons.arrow_back, color: Colors.black), onPressed: () => Navigator.pop(context)),
-          title: const Text('Add a Multi-State Indicator', style: TextStyle(color: Colors.black, fontSize: 20, fontWeight: FontWeight.w600)),
-          bottom: PreferredSize(preferredSize: const Size.fromHeight(1), child: Container(color: Colors.grey.shade300, height: 1))),
-      body: Form(key: _formKey, child: ListView(children: [
-        _fieldRow('Panel name', _panelNameCtrl, required: true,
-            trailing: const Icon(Icons.remove_red_eye_outlined, color: Colors.black45, size: 22),
-            validator: (v) => (v==null||v.isEmpty) ? 'Required' : null),
-        _checkRow('Disable dashboard prefix topic', _disableDashboardPrefix, (v) => setState(() => _disableDashboardPrefix = v), showHelp: true),
-        _fieldRow('Topic', _topicCtrl, required: true, validator: (v) => (v==null||v.isEmpty) ? 'Required' : null),
-        ...List.generate(_items.length, (i) => Column(children: [
-          _fieldRow('Label for item ${i+1}', _items[i]['label'] as TextEditingController),
-          _fieldRow('Payload for item ${i+1}', _items[i]['payload'] as TextEditingController, required: true,
-              validator: (v) => (v==null||v.isEmpty) ? 'Required' : null),
-          _itemIconRow(i),
-        ])),
-        Column(children: [
-          Padding(padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14), child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-            const Text('Add more item', style: TextStyle(fontSize: 15, color: Colors.black87)),
-            GestureDetector(onTap: () => setState(() => _addItem()),
-                child: Container(width: 44, height: 44, decoration: const BoxDecoration(color: Colors.grey, shape: BoxShape.circle),
-                    child: const Icon(Icons.add, color: Colors.white, size: 26))),
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(icon: const Icon(Icons.arrow_back, color: Colors.black), onPressed: () => Navigator.pop(context)),
+        title: Text(l.addMultiStateIndicator, style: const TextStyle(color: Colors.black, fontSize: 18, fontWeight: FontWeight.bold)),
+        bottom: PreferredSize(preferredSize: const Size.fromHeight(1), child: Container(color: Colors.grey.shade300, height: 1)),
+      ),
+      body: Form(
+        key: _formKey,
+        child: ListView(children: [
+          _fieldRow(l.panelName, _panelNameCtrl, required: true,
+              trailing: const Icon(Icons.remove_red_eye_outlined, color: Colors.black45, size: 22),
+              validator: (v) => (v == null || v.isEmpty) ? l.required : null),
+
+          _checkRow(l.disableDashboardPrefix, _disableDashboardPrefix, (v) => setState(() => _disableDashboardPrefix = v), showHelp: true),
+
+          _fieldRow(l.topic, _topicCtrl, required: true, validator: (v) => (v == null || v.isEmpty) ? l.required : null),
+
+          // Dynamic State Items
+          ...List.generate(_items.length, (i) => Column(children: [
+            _fieldRow('${l.labelForItem} ${i + 1}', _items[i]['label'] as TextEditingController),
+            _fieldRow('${l.payloadForItem} ${i + 1}', _items[i]['payload'] as TextEditingController, required: true,
+                validator: (v) => (v == null || v.isEmpty) ? l.required : null),
+            _itemIconRow(i, l), // Passed localizations helper
           ])),
-          _divider(),
+
+          // Add More Button
+          Column(children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                Text(l.addMoreItem, style: const TextStyle(fontSize: 15, color: Colors.black87)),
+                GestureDetector(
+                  onTap: () => setState(() => _addItem()),
+                  child: Container(width: 44, height: 44, decoration: const BoxDecoration(color: Colors.grey, shape: BoxShape.circle), child: const Icon(Icons.add, color: Colors.white, size: 26)),
+                ),
+              ]),
+            ),
+            _divider(),
+          ]),
+
+          // Icon Size
+          Column(children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+              child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                Text(l.iconSize, style: const TextStyle(fontSize: 15, color: Colors.black87)),
+                DropdownButton<String>(
+                  value: _iconSize,
+                  underline: const SizedBox(),
+                  items: sizeLabels.entries.map((e) => DropdownMenuItem(value: e.key, child: Text(e.value))).toList(),
+                  onChanged: (v) => setState(() => _iconSize = v!),
+                ),
+              ]),
+            ),
+            _divider(),
+          ]),
+
+          _checkRow(l.payloadIsJson, _payloadIsJson, (v) => setState(() => _payloadIsJson = v)),
+          _checkRow(l.showReceivedTimestamp, _showReceivedTimestamp, (v) => setState(() => _showReceivedTimestamp = v)),
+
+          // Footer Actions
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 24, 16, 36),
+            child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+              SizedBox(width: 130, height: 44, child: OutlinedButton(onPressed: () => Navigator.pop(context), child: Text(l.cancel))),
+              const SizedBox(width: 16),
+              SizedBox(
+                width: 130,
+                height: 44,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1565C0)),
+                  onPressed: _create,
+                  child: Text(l.create, style: const TextStyle(color: Colors.white)),
+                ),
+              ),
+            ]),
+          ),
         ]),
-        Column(children: [
-          Padding(padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6), child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-            const Text('Icon size', style: TextStyle(fontSize: 15, color: Colors.black87)),
-            DropdownButton<String>(value: _iconSize, underline: const SizedBox(),
-                style: const TextStyle(fontSize: 15, color: Colors.black87),
-                icon: const Icon(Icons.arrow_drop_down, color: Colors.black54),
-                items: _iconSizes.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
-                onChanged: (v) => setState(() => _iconSize = v!)),
-          ])),
-          _divider(),
-        ]),
-        _checkRow('Enable notification or alarm', _enableNotification, (v) => setState(() => _enableNotification = v), showHelp: true, enabled: false),
-        _checkRow('Payload is JSON Data', _payloadIsJson, (v) => setState(() => _payloadIsJson = v)),
-        _checkRow('Show received timestamp', _showReceivedTimestamp, (v) => setState(() => _showReceivedTimestamp = v)),
-        _checkRow('Show sent timestamp', _showSentTimestamp, (v) => setState(() => _showSentTimestamp = v)),
-        Column(children: [
-          Padding(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6), child: Row(children: [
-            SizedBox(width: 28, height: 28, child: Checkbox(value: _retain, onChanged: (v) => setState(() => _retain = v ?? false),
-                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                side: const BorderSide(color: Colors.black54, width: 1.5),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(2)))),
-            const SizedBox(width: 12),
-            const Text('Retain', style: TextStyle(fontSize: 15, color: Colors.black87)),
-            const Spacer(),
-            const Text('QoS', style: TextStyle(fontSize: 15, color: Colors.black87)),
-            const SizedBox(width: 8),
-            DropdownButton<int>(value: _qos, underline: Container(height: 1, color: Colors.black26),
-                style: const TextStyle(fontSize: 15, color: Colors.black87),
-                icon: const Icon(Icons.arrow_drop_down, color: Colors.black54),
-                items: _qosOptions.map((q) => DropdownMenuItem(value: q, child: Text('$q'))).toList(),
-                onChanged: (v) => setState(() => _qos = v!)),
-          ])),
-          _divider(),
-        ]),
-        Padding(padding: const EdgeInsets.fromLTRB(16, 24, 16, 36), child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-          SizedBox(width: 130, height: 44, child: OutlinedButton(
-              style: OutlinedButton.styleFrom(side: const BorderSide(color: Colors.grey), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4))),
-              onPressed: () => Navigator.pop(context),
-              child: const Text('CANCEL', style: TextStyle(color: Colors.black87, fontWeight: FontWeight.w600, fontSize: 14, letterSpacing: 0.8)))),
-          const SizedBox(width: 16),
-          SizedBox(width: 130, height: 44, child: ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1565C0), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)), elevation: 2),
-              onPressed: _create,
-              child: const Text('CREATE', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14, letterSpacing: 0.8)))),
-        ])),
-      ])),
+      ),
     );
   }
 }

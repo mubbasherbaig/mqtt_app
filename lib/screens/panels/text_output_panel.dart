@@ -36,10 +36,19 @@ class _AddTextOutputPanelScreenState extends State<AddTextOutputPanelScreen> {
   void _create() {
     if (_formKey.currentState!.validate()) {
       Navigator.pop(context, {
-        'type': 'Text Output', 'label': _panelNameCtrl.text.trim(),
-        'topic': _topicCtrl.text.trim(), 'factor': _factorCtrl.text.trim(),
-        'decimalPrecision': _decimalPrecisionCtrl.text.trim(), 'unit': _unitCtrl.text.trim(),
-        'showHistory': _showHistory, 'textSize': _textSize, 'qos': _qos,
+        'type': 'Text Output',
+        'label': _panelNameCtrl.text.trim(),
+        'topic': _topicCtrl.text.trim(),
+        'factor': _factorCtrl.text.trim(),
+        'decimalPrecision': _decimalPrecisionCtrl.text.trim(),
+        'unit': _unitCtrl.text.trim(),
+        'showHistory': _showHistory,
+        'textSize': _textSize,
+        'qos': _qos,
+        // Fixed: Ensure these flags persist
+        'disableDashboardPrefix': _disableDashboardPrefix,
+        'payloadIsJson': _payloadIsJson,
+        'showReceivedTimestamp': _showReceivedTimestamp,
       });
     }
   }

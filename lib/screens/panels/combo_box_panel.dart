@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import '../app_localizations.dart';
+import '../app_settings.dart';
 
 class AddComboBoxPanelScreen extends StatefulWidget {
   const AddComboBoxPanelScreen({super.key});
@@ -102,79 +106,91 @@ class _AddComboBoxPanelScreenState extends State<AddComboBoxPanelScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context.watch<AppSettings>().languageCode);
+
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(backgroundColor: Colors.white, elevation: 0,
+      appBar: AppBar(
+          backgroundColor: Colors.white,
+          elevation: 0,
           leading: IconButton(icon: const Icon(Icons.arrow_back, color: Colors.black), onPressed: () => Navigator.pop(context)),
-          title: const Text('Add a Combo Box panel', style: TextStyle(color: Colors.black, fontSize: 20, fontWeight: FontWeight.w600)),
+          title: Text(l.addComboBoxPanel, style: const TextStyle(color: Colors.black, fontSize: 18, fontWeight: FontWeight.bold)),
           bottom: PreferredSize(preferredSize: const Size.fromHeight(1), child: Container(color: Colors.grey.shade300, height: 1))),
-      body: Form(key: _formKey, child: ListView(children: [
-        _fieldRow('Panel name', _panelNameCtrl, required: true, validator: (v) => (v==null||v.isEmpty) ? 'Required' : null),
-        _checkRow('Disable dashboard prefix topic', _disableDashboardPrefix, (v) => setState(() => _disableDashboardPrefix = v), showHelp: true),
-        _fieldRow('Topic', _topicCtrl, required: true, validator: (v) => (v==null||v.isEmpty) ? 'Required' : null),
-        _fieldRow('Subscribe Topic', _subscribeTopicCtrl, showHelp: true),
-        _checkRow('Use icon for option', _useIconForOption, (v) => setState(() => _useIconForOption = v)),
+      body: Form(
+          key: _formKey,
+          child: ListView(children: [
+            _fieldRow(l.panelName, _panelNameCtrl, required: true, validator: (v) => (v == null || v.isEmpty) ? l.required : null),
+            _checkRow(l.disableDashboardPrefix, _disableDashboardPrefix, (v) => setState(() => _disableDashboardPrefix = v), showHelp: true),
+            _fieldRow(l.topic, _topicCtrl, required: true, validator: (v) => (v == null || v.isEmpty) ? l.required : null),
+            _fieldRow(l.subscribeTopic, _subscribeTopicCtrl, showHelp: true),
+            _checkRow(l.useIconForOption, _useIconForOption, (v) => setState(() => _useIconForOption = v)),
 
-        // Dynamic items
-        ...List.generate(_items.length, (i) => Column(children: [
-          _fieldRow('Label for item ${i + 1}', _items[i]['label']!, required: true,
-              validator: (v) => (v==null||v.isEmpty) ? 'Required' : null),
-          _fieldRow('Payload for item ${i + 1}', _items[i]['payload']!, required: true,
-              validator: (v) => (v==null||v.isEmpty) ? 'Required' : null),
-        ])),
+            // Dynamic items
+            ...List.generate(_items.length, (i) => Column(children: [
+              _fieldRow('${l.labelForItem} ${i + 1}', _items[i]['label']!, required: true, validator: (v) => (v == null || v.isEmpty) ? l.required : null),
+              _fieldRow('${l.payloadForItem} ${i + 1}', _items[i]['payload']!, required: true, validator: (v) => (v == null || v.isEmpty) ? l.required : null),
+            ])),
 
-        // Add more item row
-        Column(children: [
-          Padding(padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14), child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text('Add more item', style: TextStyle(fontSize: 15, color: Colors.black87)),
-                GestureDetector(
-                    onTap: () => setState(() => _addItem()),
-                    child: Container(width: 44, height: 44,
-                        decoration: const BoxDecoration(color: Colors.grey, shape: BoxShape.circle),
-                        child: const Icon(Icons.add, color: Colors.white, size: 26))),
-              ])),
-          _divider(),
-        ]),
+            // Add more item row
+            Column(children: [
+              Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                    Text(l.addMoreItem, style: const TextStyle(fontSize: 15, color: Colors.black87)),
+                    GestureDetector(
+                        onTap: () => setState(() => _addItem()),
+                        child: Container(width: 44, height: 44, decoration: const BoxDecoration(color: Colors.grey, shape: BoxShape.circle), child: const Icon(Icons.add, color: Colors.white, size: 26))),
+                  ])),
+              _divider(),
+            ]),
 
-        _checkRow('Enable notification or alarm', _enableNotification, (v) => setState(() => _enableNotification = v), showHelp: true, enabled: false),
-        _checkRow('Payload is JSON Data', _payloadIsJson, (v) => setState(() => _payloadIsJson = v)),
-        _checkRow('Show received timestamp', _showReceivedTimestamp, (v) => setState(() => _showReceivedTimestamp = v)),
-        _checkRow('Show sent timestamp', _showSentTimestamp, (v) => setState(() => _showSentTimestamp = v)),
+            _checkRow(l.payloadIsJson, _payloadIsJson, (v) => setState(() => _payloadIsJson = v)),
+            _checkRow(l.showReceivedTimestamp, _showReceivedTimestamp, (v) => setState(() => _showReceivedTimestamp = v)),
+            _checkRow(l.showSentTimestamp, _showSentTimestamp, (v) => setState(() => _showSentTimestamp = v)),
 
-        Column(children: [
-          Padding(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6), child: Row(children: [
-            SizedBox(width: 28, height: 28, child: Checkbox(value: _retain, onChanged: (v) => setState(() => _retain = v ?? false),
-                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                side: const BorderSide(color: Colors.black54, width: 1.5),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(2)))),
-            const SizedBox(width: 12),
-            const Text('Retain', style: TextStyle(fontSize: 15, color: Colors.black87)),
-            const Spacer(),
-            const Text('QoS', style: TextStyle(fontSize: 15, color: Colors.black87)),
-            const SizedBox(width: 8),
-            DropdownButton<int>(value: _qos, underline: Container(height: 1, color: Colors.black26),
-                style: const TextStyle(fontSize: 15, color: Colors.black87),
-                icon: const Icon(Icons.arrow_drop_down, color: Colors.black54),
-                items: _qosOptions.map((q) => DropdownMenuItem(value: q, child: Text('$q'))).toList(),
-                onChanged: (v) => setState(() => _qos = v!)),
+            Column(children: [
+              Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  child: Row(children: [
+                    SizedBox(
+                        width: 28,
+                        height: 28,
+                        child: Checkbox(
+                            value: _retain,
+                            onChanged: (v) => setState(() => _retain = v ?? false),
+                            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            side: const BorderSide(color: Colors.black54, width: 1.5),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(2)))),
+                    const SizedBox(width: 12),
+                    Text(l.retain, style: const TextStyle(fontSize: 15, color: Colors.black87)),
+                    const Spacer(),
+                    const Text('QoS', style: TextStyle(fontSize: 15, color: Colors.black87)),
+                    const SizedBox(width: 8),
+                    DropdownButton<int>(
+                        value: _qos,
+                        underline: Container(height: 1, color: Colors.black26),
+                        style: const TextStyle(fontSize: 15, color: Colors.black87),
+                        icon: const Icon(Icons.arrow_drop_down, color: Colors.black54),
+                        items: _qosOptions.map((q) => DropdownMenuItem(value: q, child: Text('$q'))).toList(),
+                        onChanged: (v) => setState(() => _qos = v!)),
+                  ])),
+              _divider(),
+            ]),
+
+            Padding(
+                padding: const EdgeInsets.fromLTRB(16, 24, 16, 36),
+                child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                  SizedBox(width: 130, height: 44, child: OutlinedButton(onPressed: () => Navigator.pop(context), child: Text(l.cancel))),
+                  const SizedBox(width: 16),
+                  SizedBox(
+                      width: 130,
+                      height: 44,
+                      child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1565C0)),
+                          onPressed: _create,
+                          child: Text(l.create, style: const TextStyle(color: Colors.white)))),
+                ])),
           ])),
-          _divider(),
-        ]),
-
-        Padding(padding: const EdgeInsets.fromLTRB(16, 24, 16, 36), child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-          SizedBox(width: 130, height: 44, child: OutlinedButton(
-              style: OutlinedButton.styleFrom(side: const BorderSide(color: Colors.grey), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4))),
-              onPressed: () => Navigator.pop(context),
-              child: const Text('CANCEL', style: TextStyle(color: Colors.black87, fontWeight: FontWeight.w600, fontSize: 14, letterSpacing: 0.8)))),
-          const SizedBox(width: 16),
-          SizedBox(width: 130, height: 44, child: ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1565C0), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)), elevation: 2),
-              onPressed: _create,
-              child: const Text('CREATE', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14, letterSpacing: 0.8)))),
-        ])),
-      ])),
     );
   }
 }

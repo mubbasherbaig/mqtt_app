@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
 import '../app_localizations.dart';
 import '../app_settings.dart';
 
@@ -44,7 +43,7 @@ class _AddButtonPanelScreenState extends State<AddButtonPanelScreen> {
     super.dispose();
   }
 
-  void _pickColor() {
+  void _pickColor(AppLocalizations l) {
     final colors = [
       const Color(0xFF1E88E5), Colors.red, Colors.green, Colors.orange,
       Colors.purple, Colors.teal, Colors.pink, Colors.indigo,
@@ -52,7 +51,7 @@ class _AddButtonPanelScreenState extends State<AddButtonPanelScreen> {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Pick Button Color'),
+        title: Text(l.buttonColor),
         content: Wrap(
           spacing: 10, runSpacing: 10,
           children: colors.map((c) => GestureDetector(
@@ -90,11 +89,8 @@ class _AddButtonPanelScreenState extends State<AddButtonPanelScreen> {
     }
   }
 
-  // ── Reusable widgets ─────────────────────────────────────────
-
   Widget _divider() => const Divider(height: 1, thickness: 1, color: Color(0xFFE0E0E0));
 
-  // Label above underline input — exactly as in the screenshot
   Widget _fieldRow(
       String label,
       TextEditingController ctrl, {
@@ -119,19 +115,8 @@ class _AddButtonPanelScreenState extends State<AddButtonPanelScreen> {
                     RichText(
                       text: TextSpan(
                         text: label,
-                        style: const TextStyle(
-                          fontSize: 15,
-                          color: Colors.black87,
-                          fontWeight: FontWeight.w400,
-                        ),
-                        children: required
-                            ? const [
-                          TextSpan(
-                            text: ' *',
-                            style: TextStyle(color: Colors.red),
-                          )
-                        ]
-                            : [],
+                        style: const TextStyle(fontSize: 15, color: Colors.black87, fontWeight: FontWeight.w400),
+                        children: required ? const [TextSpan(text: ' *', style: TextStyle(color: Colors.red))] : [],
                       ),
                     ),
                     TextFormField(
@@ -142,18 +127,10 @@ class _AddButtonPanelScreenState extends State<AddButtonPanelScreen> {
                       decoration: const InputDecoration(
                         isDense: true,
                         contentPadding: EdgeInsets.only(top: 6, bottom: 8),
-                        enabledBorder: UnderlineInputBorder(
-                          borderSide: BorderSide(color: Colors.black26),
-                        ),
-                        focusedBorder: UnderlineInputBorder(
-                          borderSide: BorderSide(color: Color(0xFF1E88E5)),
-                        ),
-                        errorBorder: UnderlineInputBorder(
-                          borderSide: BorderSide(color: Colors.red),
-                        ),
-                        focusedErrorBorder: UnderlineInputBorder(
-                          borderSide: BorderSide(color: Colors.red),
-                        ),
+                        enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.black26)),
+                        focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Color(0xFF1E88E5))),
+                        errorBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.red)),
+                        focusedErrorBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.red)),
                       ),
                     ),
                   ],
@@ -172,13 +149,7 @@ class _AddButtonPanelScreenState extends State<AddButtonPanelScreen> {
     );
   }
 
-  // Checkbox row — matches screenshot style
-  Widget _checkRow(
-      String label,
-      bool value,
-      ValueChanged<bool> onChanged, {
-        bool showHelp = false,
-      }) {
+  Widget _checkRow(String label, bool value, ValueChanged<bool> onChanged, {bool showHelp = false}) {
     return Column(
       children: [
         InkWell(
@@ -188,8 +159,7 @@ class _AddButtonPanelScreenState extends State<AddButtonPanelScreen> {
             child: Row(
               children: [
                 SizedBox(
-                  width: 28,
-                  height: 28,
+                  width: 28, height: 28,
                   child: Checkbox(
                     value: value,
                     onChanged: (v) => onChanged(v ?? false),
@@ -199,12 +169,7 @@ class _AddButtonPanelScreenState extends State<AddButtonPanelScreen> {
                   ),
                 ),
                 const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    label,
-                    style: const TextStyle(fontSize: 15, color: Colors.black87),
-                  ),
-                ),
+                Expanded(child: Text(label, style: const TextStyle(fontSize: 15, color: Colors.black87))),
                 if (showHelp) _helpIcon(),
               ],
             ),
@@ -216,16 +181,10 @@ class _AddButtonPanelScreenState extends State<AddButtonPanelScreen> {
   }
 
   Widget _helpIcon() => Container(
-    width: 28,
-    height: 28,
-    decoration: const BoxDecoration(
-      color: Color(0xFF1E88E5),
-      shape: BoxShape.circle,
-    ),
+    width: 28, height: 28,
+    decoration: const BoxDecoration(color: Color(0xFF1E88E5), shape: BoxShape.circle),
     child: const Icon(Icons.question_mark, color: Colors.white, size: 15),
   );
-
-  // ── Build ────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
@@ -233,19 +192,13 @@ class _AddButtonPanelScreenState extends State<AddButtonPanelScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
+        backgroundColor: Colors.white, elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Add a Button panel',
-          style: TextStyle(
-            color: Colors.black,
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-          ),
+        title: Text(l.addButtonPanel,
+          style: const TextStyle(color: Colors.black, fontSize: 20, fontWeight: FontWeight.w600),
         ),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
@@ -256,92 +209,18 @@ class _AddButtonPanelScreenState extends State<AddButtonPanelScreen> {
         key: _formKey,
         child: ListView(
           children: [
+            _fieldRow(l.panelName, _panelNameController, required: true, validator: (v) => (v == null || v.isEmpty) ? l.required : null),
+            _checkRow(l.disableDashboardPrefix, _disableDashboardPrefix, (v) => setState(() => _disableDashboardPrefix = v), showHelp: true),
+            _fieldRow(l.topic, _topicController, required: true, validator: (v) => (v == null || v.isEmpty) ? l.required : null),
+            _checkRow(l.noPayload, _noPayload, (v) => setState(() => _noPayload = v), showHelp: true),
 
-            // Panel name
-            _fieldRow(
-              'Panel name', _panelNameController,
-              required: true,
-              validator: (v) => (v == null || v.isEmpty) ? 'Panel name is required' : null,
-            ),
-
-            // Disable dashboard prefix topic
-            _checkRow(
-              'Disable dashboard prefix topic',
-              _disableDashboardPrefix,
-                  (v) => setState(() => _disableDashboardPrefix = v),
-              showHelp: true,
-            ),
-
-            // Topic
-            _fieldRow(
-              'Topic', _topicController,
-              required: true,
-              validator: (v) => (v == null || v.isEmpty) ? 'Topic is required' : null,
-            ),
-
-            // No payload
-            _checkRow(
-              'No payload', _noPayload,
-                  (v) => setState(() => _noPayload = v),
-              showHelp: true,
-            ),
-
-            // Payload — hidden when No payload checked
             if (!_noPayload)
-              _fieldRow(
-                'Payload', _payloadController,
-                required: true,
-                validator: (v) => (!_noPayload && (v == null || v.isEmpty))
-                    ? 'Payload is required'
-                    : null,
-              ),
+              _fieldRow(l.payload, _payloadController, required: true, validator: (v) => (!_noPayload && (v == null || v.isEmpty)) ? l.required : null),
 
             // Separate payload on release
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 18, 16, 0),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Separate payload on release',
-                              style: TextStyle(fontSize: 15, color: Colors.black87),
-                            ),
-                            TextField(
-                              controller: _separatePayloadController,
-                              style: const TextStyle(fontSize: 15),
-                              decoration: const InputDecoration(
-                                isDense: true,
-                                contentPadding: EdgeInsets.only(top: 6, bottom: 8),
-                                enabledBorder: UnderlineInputBorder(
-                                  borderSide: BorderSide(color: Colors.black26),
-                                ),
-                                focusedBorder: UnderlineInputBorder(
-                                  borderSide: BorderSide(color: Color(0xFF1E88E5)),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.only(left: 10, bottom: 8),
-                        child: _helpIcon(),
-                      ),
-                    ],
-                  ),
-                ),
-                _divider(),
-              ],
-            ),
+            _fieldRow(l.separatePayload, _separatePayloadController, showHelp: true),
 
-            // Button color
+            // Button color picker
             Column(
               children: [
                 Padding(
@@ -349,19 +228,12 @@ class _AddButtonPanelScreenState extends State<AddButtonPanelScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
-                        'Button color',
-                        style: TextStyle(fontSize: 15, color: Colors.black87),
-                      ),
+                      Text(l.buttonColor, style: const TextStyle(fontSize: 15, color: Colors.black87)),
                       GestureDetector(
-                        onTap: _pickColor,
+                        onTap: () => _pickColor(l),
                         child: Container(
-                          width: 110,
-                          height: 36,
-                          decoration: BoxDecoration(
-                            color: _buttonColor,
-                            borderRadius: BorderRadius.circular(4),
-                          ),
+                          width: 110, height: 36,
+                          decoration: BoxDecoration(color: _buttonColor, borderRadius: BorderRadius.circular(4)),
                           alignment: Alignment.centerRight,
                           padding: const EdgeInsets.only(right: 8),
                           child: const Icon(Icons.arrow_drop_down, color: Colors.white, size: 22),
@@ -382,18 +254,13 @@ class _AddButtonPanelScreenState extends State<AddButtonPanelScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
-                        'Button size',
-                        style: TextStyle(fontSize: 15, color: Colors.black87),
-                      ),
+                      Text(l.buttonSize, style: const TextStyle(fontSize: 15, color: Colors.black87)),
                       DropdownButton<String>(
                         value: _buttonSize,
                         underline: const SizedBox(),
                         style: const TextStyle(fontSize: 15, color: Colors.black87),
                         icon: const Icon(Icons.arrow_drop_down, color: Colors.black54),
-                        items: _buttonSizes
-                            .map((s) => DropdownMenuItem(value: s, child: Text(s)))
-                            .toList(),
+                        items: _buttonSizes.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
                         onChanged: (v) => setState(() => _buttonSize = v!),
                       ),
                     ],
@@ -403,21 +270,14 @@ class _AddButtonPanelScreenState extends State<AddButtonPanelScreen> {
               ],
             ),
 
-            // Checkboxes
-            _checkRow('Repeat publish until released', _repeatPublish,
-                    (v) => setState(() => _repeatPublish = v)),
-            _checkRow('Fit to panel width', _fitToPanelWidth,
-                    (v) => setState(() => _fitToPanelWidth = v)),
-            _checkRow('Use icons for button', _useIconsForButton,
-                    (v) => setState(() => _useIconsForButton = v)),
-            _checkRow('Payload is JSON Data', _payloadIsJson,
-                    (v) => setState(() => _payloadIsJson = v)),
-            _checkRow('Show sent timestamp', _showSentTimestamp,
-                    (v) => setState(() => _showSentTimestamp = v)),
-            _checkRow('Confirm before publish', _confirmBeforePublish,
-                    (v) => setState(() => _confirmBeforePublish = v)),
+            _checkRow(l.repeatPublish, _repeatPublish, (v) => setState(() => _repeatPublish = v)),
+            _checkRow(l.fitToWidth, _fitToPanelWidth, (v) => setState(() => _fitToPanelWidth = v)),
+            _checkRow(l.useIcons, _useIconsForButton, (v) => setState(() => _useIconsForButton = v)),
+            _checkRow(l.payloadIsJson, _payloadIsJson, (v) => setState(() => _payloadIsJson = v)),
+            _checkRow(l.showSentTimestamp, _showSentTimestamp, (v) => setState(() => _showSentTimestamp = v)),
+            _checkRow(l.confirmBeforePublish, _confirmBeforePublish, (v) => setState(() => _confirmBeforePublish = v)),
 
-            // Retain + QoS on same row
+            // Retain + QoS row
             Column(
               children: [
                 Padding(
@@ -435,20 +295,16 @@ class _AddButtonPanelScreenState extends State<AddButtonPanelScreen> {
                         ),
                       ),
                       const SizedBox(width: 12),
-                      const Text('Retain',
-                          style: TextStyle(fontSize: 15, color: Colors.black87)),
+                      Text(l.retain, style: const TextStyle(fontSize: 15, color: Colors.black87)),
                       const Spacer(),
-                      const Text('QoS',
-                          style: TextStyle(fontSize: 15, color: Colors.black87)),
+                      Text(l.qos, style: const TextStyle(fontSize: 15, color: Colors.black87)),
                       const SizedBox(width: 8),
                       DropdownButton<int>(
                         value: _qos,
                         underline: Container(height: 1, color: Colors.black26),
                         style: const TextStyle(fontSize: 15, color: Colors.black87),
                         icon: const Icon(Icons.arrow_drop_down, color: Colors.black54),
-                        items: _qosOptions
-                            .map((q) => DropdownMenuItem(value: q, child: Text('$q')))
-                            .toList(),
+                        items: _qosOptions.map((q) => DropdownMenuItem(value: q, child: Text('$q'))).toList(),
                         onChanged: (v) => setState(() => _qos = v!),
                       ),
                     ],
@@ -458,7 +314,6 @@ class _AddButtonPanelScreenState extends State<AddButtonPanelScreen> {
               ],
             ),
 
-            // CANCEL / CREATE
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 24, 16, 36),
               child: Row(
@@ -469,19 +324,10 @@ class _AddButtonPanelScreenState extends State<AddButtonPanelScreen> {
                     child: OutlinedButton(
                       style: OutlinedButton.styleFrom(
                         side: const BorderSide(color: Colors.grey),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(4)),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
                       ),
                       onPressed: () => Navigator.pop(context),
-                      child: const Text(
-                        'CANCEL',
-                        style: TextStyle(
-                          color: Colors.black87,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 14,
-                          letterSpacing: 0.8,
-                        ),
-                      ),
+                      child: Text(l.cancel, style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.w600, fontSize: 14, letterSpacing: 0.8)),
                     ),
                   ),
                   const SizedBox(width: 16),
@@ -490,20 +336,11 @@ class _AddButtonPanelScreenState extends State<AddButtonPanelScreen> {
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF1565C0),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(4)),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
                         elevation: 2,
                       ),
                       onPressed: _create,
-                      child: const Text(
-                        'CREATE',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 14,
-                          letterSpacing: 0.8,
-                        ),
-                      ),
+                      child: Text(l.create, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14, letterSpacing: 0.8)),
                     ),
                   ),
                 ],

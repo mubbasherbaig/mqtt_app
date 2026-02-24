@@ -48,10 +48,20 @@ class _AddSwitchPanelScreenState extends State<AddSwitchPanelScreen> {
   void _create() {
     if (_formKey.currentState!.validate()) {
       Navigator.pop(context, {
-        'type': 'Switch', 'label': _panelNameController.text.trim(),
-        'topic': _topicController.text.trim(), 'subscribeTopic': _subscribeTopicController.text.trim(),
-        'payloadOn': _payloadOnController.text.trim(), 'payloadOff': _payloadOffController.text.trim(),
-        'switchColor': _switchColor.value.toString(), 'retain': _retain, 'qos': _qos,
+        'type': 'Switch',
+        'label': _panelNameController.text.trim(),
+        'topic': _topicController.text.trim(),
+        'subscribeTopic': _subscribeTopicController.text.trim(),
+        'payloadOn': _payloadOnController.text.trim(),
+        'payloadOff': _payloadOffController.text.trim(),
+        'switchColor': _switchColor.value.toString(),
+        'retain': _retain,
+        'qos': _qos,
+        // ADD THESE MISSING FIELDS:
+        'disableDashboardPrefix': _disableDashboardPrefix,
+        'payloadIsJson': _payloadIsJson,
+        'showReceivedTimestamp': _showReceivedTimestamp,
+        'showSentTimestamp': _showSentTimestamp,
       });
     }
   }

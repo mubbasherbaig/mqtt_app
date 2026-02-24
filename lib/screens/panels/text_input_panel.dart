@@ -29,9 +29,17 @@ class _AddTextInputPanelScreenState extends State<AddTextInputPanelScreen> {
   void _create() {
     if (_formKey.currentState!.validate()) {
       Navigator.pop(context, {
-        'type': 'Text Input', 'label': _panelNameCtrl.text.trim(),
-        'topic': _topicCtrl.text.trim(), 'clearTextOnPublish': _clearTextOnPublish,
-        'payloadIsJson': _payloadIsJson, 'retain': _retain, 'qos': _qos,
+        'type': 'Text Input',
+        'label': _panelNameCtrl.text.trim(),
+        'topic': _topicCtrl.text.trim(),
+        // Fixed: Ensure all settings are passed back
+        'disableDashboardPrefix': _disableDashboardPrefix,
+        'clearTextOnPublish': _clearTextOnPublish,
+        'payloadIsJson': _payloadIsJson,
+        'showSentTimestamp': _showSentTimestamp,
+        'confirmBeforePublish': _confirmBeforePublish,
+        'retain': _retain,
+        'qos': _qos,
       });
     }
   }

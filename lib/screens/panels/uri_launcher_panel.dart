@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import '../app_localizations.dart';
+import '../app_settings.dart';
 
 class AddUriLauncherPanelScreen extends StatefulWidget {
   const AddUriLauncherPanelScreen({super.key});
@@ -26,8 +30,15 @@ class _AddUriLauncherPanelScreenState extends State<AddUriLauncherPanelScreen> {
   void _create() {
     if (_formKey.currentState!.validate()) {
       Navigator.pop(context, {
-        'type': 'URI Launcher', 'label': _panelNameCtrl.text.trim(),
-        'topic': _topicCtrl.text.trim(), 'staticUrl': _staticUrl, 'qos': _qos,
+        'type': 'URI Launcher',
+        'label': _panelNameCtrl.text.trim(),
+        'topic': _topicCtrl.text.trim(),
+        'staticUrl': _staticUrl,
+        'qos': _qos,
+        // Ensure settings persist
+        'disableDashboardPrefix': _disableDashboardPrefix,
+        'payloadIsJson': _payloadIsJson,
+        'showReceivedTimestamp': _showReceivedTimestamp,
       });
     }
   }
@@ -72,43 +83,45 @@ class _AddUriLauncherPanelScreenState extends State<AddUriLauncherPanelScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context.watch<AppSettings>().languageCode);
+
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(backgroundColor: Colors.white, elevation: 0,
-          leading: IconButton(icon: const Icon(Icons.arrow_back, color: Colors.black), onPressed: () => Navigator.pop(context)),
-          title: const Text('Add an URI Launcher panel', style: TextStyle(color: Colors.black, fontSize: 20, fontWeight: FontWeight.w600)),
-          bottom: PreferredSize(preferredSize: const Size.fromHeight(1), child: Container(color: Colors.grey.shade300, height: 1))),
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(icon: const Icon(Icons.arrow_back, color: Colors.black), onPressed: () => Navigator.pop(context)),
+        title: Text(l.addUriLauncherPanel, style: const TextStyle(color: Colors.black, fontSize: 18, fontWeight: FontWeight.bold)),
+        bottom: PreferredSize(preferredSize: const Size.fromHeight(1), child: Container(color: Colors.grey.shade300, height: 1)),
+      ),
       body: Form(key: _formKey, child: ListView(children: [
-        _field('Panel name', _panelNameCtrl, req: true, val: (v) => (v==null||v.isEmpty) ? 'Required' : null),
-        _check('Disable dashboard prefix topic', _disableDashboardPrefix, (v) => setState(() => _disableDashboardPrefix = v), help: true),
-        _field('Topic', _topicCtrl, req: true, val: (v) => (v==null||v.isEmpty) ? 'Required' : null),
-        _check('Static URL', _staticUrl, (v) => setState(() => _staticUrl = v)),
-        _check('Enable notification or alarm', _enableNotification, (v) => setState(() => _enableNotification = v), help: true, enabled: false),
-        _check('Payload is JSON Data', _payloadIsJson, (v) => setState(() => _payloadIsJson = v)),
-        _check('Show received timestamp', _showReceivedTimestamp, (v) => setState(() => _showReceivedTimestamp = v)),
+        _field(l.panelName, _panelNameCtrl, req: true, val: (v) => (v==null||v.isEmpty) ? l.required : null),
+        _check(l.disableDashboardPrefix, _disableDashboardPrefix, (v) => setState(() => _disableDashboardPrefix = v), help: true),
+        _field(l.topic, _topicCtrl, req: true, val: (v) => (v==null||v.isEmpty) ? l.required : null),
+
+        _check(l.staticUrl, _staticUrl, (v) => setState(() => _staticUrl = v)),
+        _check(l.payloadIsJson, _payloadIsJson, (v) => setState(() => _payloadIsJson = v)),
+        _check(l.showReceivedTimestamp, _showReceivedTimestamp, (v) => setState(() => _showReceivedTimestamp = v)),
+
+        // QoS Row
         Column(children: [
           Padding(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6), child: Row(children: [
             const Spacer(),
-            const Text('QoS', style: TextStyle(fontSize: 15, color: Colors.black87)),
+            Text(l.qos, style: const TextStyle(fontSize: 15, color: Colors.black87)),
             const SizedBox(width: 8),
-            DropdownButton<int>(value: _qos, underline: Container(height: 1, color: Colors.black26),
-                style: const TextStyle(fontSize: 15, color: Colors.black87),
-                icon: const Icon(Icons.arrow_drop_down, color: Colors.black54),
-                items: _qosOptions.map((q) => DropdownMenuItem(value: q, child: Text('$q'))).toList(),
+            DropdownButton<int>(value: _qos, items: _qosOptions.map((q) => DropdownMenuItem(value: q, child: Text('$q'))).toList(),
                 onChanged: (v) => setState(() => _qos = v!)),
           ])),
           _d(),
         ]),
+
+        // Footer Actions
         Padding(padding: const EdgeInsets.fromLTRB(16, 24, 16, 36), child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-          SizedBox(width: 130, height: 44, child: OutlinedButton(
-              style: OutlinedButton.styleFrom(side: const BorderSide(color: Colors.grey), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4))),
-              onPressed: () => Navigator.pop(context),
-              child: const Text('CANCEL', style: TextStyle(color: Colors.black87, fontWeight: FontWeight.w600, fontSize: 14, letterSpacing: 0.8)))),
+          SizedBox(width: 130, height: 44, child: OutlinedButton(onPressed: () => Navigator.pop(context), child: Text(l.cancel))),
           const SizedBox(width: 16),
           SizedBox(width: 130, height: 44, child: ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1565C0), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)), elevation: 2),
-              onPressed: _create,
-              child: const Text('CREATE', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14, letterSpacing: 0.8)))),
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1565C0)),
+              onPressed: _create, child: Text(l.create, style: const TextStyle(color: Colors.white)))),
         ])),
       ])),
     );

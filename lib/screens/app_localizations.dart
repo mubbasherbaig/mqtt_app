@@ -115,12 +115,15 @@ class AppLocalizations {
   String get arcColor2       => get('arcColor2');
   String get arcColor3       => get('arcColor3');
 
-  // Chart panel
+  // Chart Panel
   String get addChartPanel   => get('addChartPanel');
   String get chartType       => get('chartType');
-  String get addSeries       => get('addSeries');
-  String get seriesLabel     => get('seriesLabel');
-  String get seriesColor     => get('seriesColor');
+  String get decimal         => get('decimal');
+  String get addMoreItem     => get('addMoreItem');
+  String get item            => get('item');
+  String get pieChart        => get('pieChart');
+  String get donutChart      => get('donutChart');
+  String get barChart        => get('barChart');
 
   // Bar Graph panel
   String get addBarGraphPanel => get('addBarGraphPanel');
@@ -129,6 +132,9 @@ class AppLocalizations {
   String get addBar          => get('addBar');
   String get barLabel        => get('barLabel');
   String get barColor        => get('barColor');
+  String get addMoreBar      => get('addMoreBar');
+  String get bar             => get('bar');
+  String get label           => get('label');
 
   // Multi-state Indicator
   String get addMultiStatePanel => get('addMultiStatePanel');
@@ -167,6 +173,82 @@ class AppLocalizations {
   String get sideBar         => get('sideBar');
   String get english         => get('english');
   String get italian         => get('italian');
+
+  // Barcode Scanner panel
+  String get addBarcodeScannerPanel => get('addBarcodeScannerPanel');
+  String get buttonColor             => get('buttonColor');
+  String get buttonSize              => get('buttonSize');
+
+  // Button panel
+  String get addButtonPanel     => get('addButtonPanel');
+  String get noPayload          => get('noPayload');
+  String get payload            => get('payload');
+  String get separatePayload    => get('separatePayload');
+  String get repeatPublish      => get('repeatPublish');
+  String get fitToWidth         => get('fitToWidth');
+  String get useIcons           => get('useIcons');
+
+  String get addColorPickerPanel => get('addColorPickerPanel');
+  String get addAlpha            => get('addAlpha');
+  String get hideColorValue      => get('hideColorValue');
+
+  // Inside AppLocalizations class
+  String get addComboBoxPanel    => get('addComboBoxPanel');
+  String get useIconForOption    => get('useIconForOption');
+  String get labelForItem        => get('labelForItem');
+  String get payloadForItem      => get('payloadForItem');
+
+  String get addDateTimePickerPanel => get('addDateTimePickerPanel');
+  String get pickerType             => get('pickerType');
+  String get small                  => get('small');
+  String get medium                 => get('medium');
+  String get large                  => get('large');
+  String get dateAndTime            => get('dateAndTime');
+  String get date                   => get('date');
+  String get time                   => get('time');
+
+  String get arcColor          => get('arcColor');
+
+  String get addImagePanel   => get('addImagePanel');
+  String get imageSource     => get('imageSource');
+  String get autoRefresh     => get('autoRefresh');
+  String get fitToPanelWidth => get('fitToPanelWidth');
+  String get urlPayload      => get('urlPayload');
+  String get base64Payload   => get('base64Payload');
+  String get binaryPayload   => get('binaryPayload');
+
+  String get addLayoutDecoratorPanel => get('addLayoutDecoratorPanel');
+  String get layoutDecoratorInfo     => get('layoutDecoratorInfo');
+  String get titleAlignment          => get('titleAlignment');
+  String get left                    => get('left');
+  String get center                  => get('center');
+  String get right                   => get('right');
+
+  String get addLedIndicatorPanel => get('addLedIndicatorPanel');
+  String get onIcon                => get('onIcon');
+  String get offIcon               => get('offIcon');
+  String get iconColor             => get('iconColor');
+
+  String get addLineGraphPanel      => get('addLineGraphPanel');
+  String get addMoreGraph           => get('addMoreGraph');
+  String get smoothCurve            => get('smoothCurve');
+  String get maxPersistence         => get('maxPersistence');
+  String get maxDuration            => get('maxDuration');
+  String get showPlotArea           => get('showPlotArea');
+  String get showPointsAndTooltip   => get('showPointsAndTooltip');
+  String get graphColor             => get('graphColor');
+  String get topicForGraph          => get('topicForGraph');
+  String get labelForGraph          => get('labelForGraph');
+  String get graphSeries => get('graphSeries');
+
+  String get addMultiStateIndicator => get('addMultiStateIndicator');
+  String get chooseIcon              => get('chooseIcon');
+  String get pickIconColor           => get('pickIconColor');
+
+  String get color => get('color');
+
+  String get addRadioButtonsPanel => get('addRadioButtonsPanel');
+  String get addRadioItem         => get('addRadioItem');
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -281,8 +363,11 @@ const Map<String, String> _en = {
   'orientation': 'Orientation',
   'defineRange': 'Define range',
   'addBar': 'Add bar',
+  'addMoreBar': 'Add more bar',
+  'bar': 'Bar',
   'barLabel': 'Bar label',
   'barColor': 'Bar color',
+  'label': 'Label',
 
   // Multi-state
   'addMultiStatePanel': 'Add a Multi-State Indicator panel',
@@ -321,6 +406,83 @@ const Map<String, String> _en = {
   'sideBar': 'Side Bar',
   'english': 'English',
   'italian': 'Italian',
+
+  // Barcode Scanner
+  'addBarcodeScannerPanel': 'Add a Barcode Scanner panel',
+  'buttonColor': 'Button color',
+  'buttonSize': 'Button size',
+
+  // Button
+  'addButtonPanel': 'Add a Button panel',
+  'noPayload': 'No payload',
+  'payload': 'Payload',
+  'separatePayload': 'Separate payload on release',
+  'repeatPublish': 'Repeat publish until released',
+  'fitToWidth': 'Fit to panel width',
+  'useIcons': 'Use icons for button',
+
+  'addColorPickerPanel': 'Add a Color Picker panel',
+  'addAlpha': 'Add alpha',
+  'hideColorValue': 'Hide color value',
+
+  'addComboBoxPanel': 'Add a Combo Box panel',
+  'useIconForOption': 'Use icon for option',
+  'labelForItem': 'Label for item',
+  'payloadForItem': 'Payload for item',
+
+  'addDateTimePickerPanel': 'Add a Date Time Picker panel',
+  'pickerType': 'Picker type',
+  'small': 'Small',
+  'medium': 'Medium',
+  'large': 'Large',
+  'dateAndTime': 'Date Time',
+  'date': 'Date',
+  'time': 'Time',
+
+  'addImagePanel': 'Add an Image panel',
+  'imageSource': 'Image source',
+  'autoRefresh': 'Auto refresh',
+  'fitToPanelWidth': 'Fit to panel width',
+  'urlPayload': 'URL Payload',
+  'base64Payload': 'Base64 Payload',
+  'binaryPayload': 'Binary Payload',
+
+  'addLayoutDecoratorPanel': 'Add a Layout Decorator panel',
+  'layoutDecoratorInfo': 'This panel neither subscribes nor publishes any data. This panel is for decoration purpose only. It is useful to create header labels for combo panels.',
+  'titleAlignment': 'Title alignment',
+  'left': 'Left',
+  'center': 'Center',
+  'right': 'Right',
+
+  'addLedIndicatorPanel': 'Add a LED Indicator panel',
+  'onIcon': 'On icon',
+  'offIcon': 'Off icon',
+  'iconColor': 'Icon color',
+
+  'addLineGraphPanel': 'Add a Line Graph panel',
+  'addMoreGraph': 'Add more graph',
+  'smoothCurve': 'Smooth curve',
+  'maxPersistence': 'Max persistence',
+  'maxDuration': 'Max duration',
+  'showPlotArea': 'Show plot area',
+  'showPointsAndTooltip': 'Show points and tooltip',
+  'graphColor': 'Graph color',
+  'topicForGraph': 'Topic for graph',
+  'labelForGraph': 'Label for graph',
+
+  'graphSeries': 'Graph series',
+
+  'addMultiStateIndicator': 'Add a Multi-State Indicator',
+  'addMoreItem': 'Add more item',
+  'chooseIcon': 'Choose\nicon',
+  'pickIconColor': 'Pick Icon Color',
+
+  'Horizontal': 'Horizontal',
+  'Vertical': 'Vertical',
+  'Circular': 'Circular',
+
+  'addRadioButtonsPanel': 'Add a Radio Buttons panel',
+  'addRadioItem': 'Add radio item',
 };
 
 // ─────────────────────────────────────────────────────────────
@@ -435,8 +597,11 @@ const Map<String, String> _it = {
   'orientation': 'Orientamento',
   'defineRange': 'Definisci intervallo',
   'addBar': 'Aggiungi barra',
+  'addMoreBar': 'Aggiungi un\'altra barra',
+  'bar': 'Barra',
   'barLabel': 'Etichetta barra',
   'barColor': 'Colore barra',
+  'label': 'Etichetta',
 
   // Multi-state
   'addMultiStatePanel': 'Aggiungi pannello Indicatore multi-stato',
@@ -475,4 +640,81 @@ const Map<String, String> _it = {
   'sideBar': 'Barra laterale',
   'english': 'Inglese',
   'italian': 'Italiano',
+
+  // Barcode Scanner
+  'addBarcodeScannerPanel': 'Aggiungi pannello Scanner di codici a barre',
+  'buttonColor': 'Colore pulsante',
+  'buttonSize': 'Dimensione pulsante',
+
+  // Button
+  'addButtonPanel': 'Aggiungi pannello Pulsante',
+  'noPayload': 'Nessun payload',
+  'payload': 'Payload',
+  'separatePayload': 'Payload separato al rilascio',
+  'repeatPublish': 'Ripeti pubblicazione fino al rilascio',
+  'fitToWidth': 'Adatta alla larghezza del pannello',
+  'useIcons': 'Usa icone per il pulsante',
+
+  'addColorPickerPanel': 'Aggiungi pannello Selettore colore',
+  'addAlpha': 'Aggiungi canale alfa',
+  'hideColorValue': 'Nascondi valore colore',
+
+  'addComboBoxPanel': 'Aggiungi pannello Casella combinata',
+  'useIconForOption': 'Usa icona per l\'opzione',
+  'labelForItem': 'Etichetta per l\'elemento',
+  'payloadForItem': 'Payload per l\'elemento',
+
+  'addDateTimePickerPanel': 'Aggiungi Selettore data e ora',
+  'pickerType': 'Tipo di selettore',
+  'small': 'Piccolo',
+  'medium': 'Medio',
+  'large': 'Grande',
+  'dateAndTime': 'Data e ora',
+  'date': 'Data',
+  'time': 'Ora',
+
+  'addImagePanel': 'Aggiungi pannello Immagine',
+  'imageSource': 'Sorgente immagine',
+  'autoRefresh': 'Aggiornamento automatico',
+  'fitToPanelWidth': 'Adatta alla larghezza del pannello',
+  'urlPayload': 'Payload URL',
+  'base64Payload': 'Payload Base64',
+  'binaryPayload': 'Payload Binario',
+
+  'addLayoutDecoratorPanel': 'Aggiungi pannello Decoratore layout',
+  'layoutDecoratorInfo': 'Questo pannello non sottoscrive né pubblica dati. È solo a scopo decorativo, utile per creare etichette di intestazione per i pannelli combinati.',
+  'titleAlignment': 'Allineamento titolo',
+  'left': 'Sinistra',
+  'center': 'Centro',
+  'right': 'Destra',
+
+  'addLedIndicatorPanel': 'Aggiungi Indicatore LED',
+  'onIcon': 'Icona acceso',
+  'offIcon': 'Icona spento',
+  'iconColor': 'Colore icona',
+
+
+  'addLineGraphPanel': 'Aggiungi grafico a linee',
+  'addMoreGraph': 'Aggiungi altro grafico',
+  'smoothCurve': 'Curva smussata',
+  'maxPersistence': 'Persistenza massima',
+  'maxDuration': 'Durata massima',
+  'showPlotArea': 'Mostra area del tracciato',
+  'showPointsAndTooltip': 'Mostra punti e tooltip',
+  'graphColor': 'Colore del grafico',
+  'topicForGraph': 'Argomento per il grafico',
+  'labelForGraph': 'Etichetta per il grafico',
+  'graphSeries': 'Serie del grafico',
+
+  'addMultiStateIndicator': 'Aggiungi indicatore multi-stato',
+  'addMoreItem': 'Aggiungi altro elemento',
+  'chooseIcon': 'Scegli\nicona',
+  'pickIconColor': 'Scegli colore icona',
+
+  'Horizontal': 'Orizzontale',
+  'Vertical': 'Verticale',
+  'Circular': 'Circolare',
+
+  'addRadioButtonsPanel': 'Aggiungi pannello pulsanti radio',
+  'addRadioItem': 'Aggiungi elemento radio',
 };

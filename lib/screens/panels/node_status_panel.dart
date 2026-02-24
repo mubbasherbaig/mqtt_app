@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import '../app_localizations.dart';
+import '../app_settings.dart';
 
 class AddNodeStatusPanelScreen extends StatefulWidget {
   const AddNodeStatusPanelScreen({super.key});
@@ -38,14 +42,23 @@ class _AddNodeStatusPanelScreenState extends State<AddNodeStatusPanelScreen> {
   void _create() {
     if (_formKey.currentState!.validate()) {
       Navigator.pop(context, {
-        'type': 'Node Status', 'label': _panelNameCtrl.text.trim(),
-        'topic': _topicCtrl.text.trim(), 'subscribeTopic': _subscribeTopicCtrl.text.trim(),
+        'type': 'Node Status',
+        'label': _panelNameCtrl.text.trim(),
+        'topic': _topicCtrl.text.trim(),
+        'subscribeTopic': _subscribeTopicCtrl.text.trim(),
         'payloadSyncRequest': _payloadSyncRequestCtrl.text.trim(),
         'payloadOnline': _payloadOnlineCtrl.text.trim(),
         'payloadOffline': _payloadOfflineCtrl.text.trim(),
         'onlineIconColor': _onlineIconColor.value.toString(),
         'offlineIconColor': _offlineIconColor.value.toString(),
-        'retain': _retain, 'qos': _qos,
+        // Fixed: Adding missing toggles
+        'disableDashboardPrefix': _disableDashboardPrefix,
+        'autoSyncOnLoad': _autoSyncOnLoad,
+        'payloadIsJson': _payloadIsJson,
+        'showReceivedTimestamp': _showReceivedTimestamp,
+        'showSentTimestamp': _showSentTimestamp,
+        'retain': _retain,
+        'qos': _qos,
       });
     }
   }
@@ -94,22 +107,17 @@ class _AddNodeStatusPanelScreenState extends State<AddNodeStatusPanelScreen> {
   }
 
   // Icon row with color dot and hex code
-  Widget _iconRow(String iconLabel, bool isOnline, Color color, VoidCallback onColorTap) {
+  Widget _iconRow(String iconLabel, bool isOnline, Color color, VoidCallback onColorTap, AppLocalizations l) {
     final hexColor = '#${color.value.toRadixString(16).substring(2).toUpperCase()}';
     return Column(children: [
       Padding(padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12), child: Row(children: [
-        // Node status icon
-        Icon(isOnline ? Icons.wifi_tethering : Icons.wifi_tethering_off,
-            color: isOnline ? Colors.orange : Colors.grey, size: 26),
+        Icon(isOnline ? Icons.wifi_tethering : Icons.wifi_tethering_off, color: isOnline ? Colors.orange : Colors.grey, size: 26),
         const SizedBox(width: 12),
-        Expanded(child: Text(iconLabel, style: const TextStyle(fontSize: 15, color: Colors.black87))),
-        // Color dot
-        GestureDetector(onTap: onColorTap,
-            child: Container(width: 36, height: 36, decoration: BoxDecoration(color: color, shape: BoxShape.circle))),
+        Expanded(child: Text(iconLabel, style: const TextStyle(fontSize: 15))),
+        GestureDetector(onTap: onColorTap, child: Container(width: 36, height: 36, decoration: BoxDecoration(color: color, shape: BoxShape.circle))),
         const SizedBox(width: 12),
-        // Color hex label + field
         Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('Icon color', style: TextStyle(fontSize: 12, color: Colors.black54)),
+          Text(l.iconColor, style: const TextStyle(fontSize: 12, color: Colors.black54)),
           Text(hexColor, style: const TextStyle(fontSize: 14, color: Colors.black87)),
         ]),
       ])),
@@ -117,7 +125,7 @@ class _AddNodeStatusPanelScreenState extends State<AddNodeStatusPanelScreen> {
     ]);
   }
 
-  void _pickIconColor(bool isOnline) {
+  void _pickIconColor(bool isOnline, AppLocalizations l) {
     final colors = [
       const Color(0xFFFF5622), Colors.red, Colors.green, const Color(0xFF1E88E5),
       Colors.orange, Colors.purple, Colors.teal, const Color(0xFF9E9E9E),
@@ -137,60 +145,58 @@ class _AddNodeStatusPanelScreenState extends State<AddNodeStatusPanelScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context.watch<AppSettings>().languageCode);
+
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(backgroundColor: Colors.white, elevation: 0,
-          leading: IconButton(icon: const Icon(Icons.arrow_back, color: Colors.black), onPressed: () => Navigator.pop(context)),
-          title: const Text('Add a Node Status panel', style: TextStyle(color: Colors.black, fontSize: 20, fontWeight: FontWeight.w600)),
-          bottom: PreferredSize(preferredSize: const Size.fromHeight(1), child: Container(color: Colors.grey.shade300, height: 1))),
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(icon: const Icon(Icons.arrow_back, color: Colors.black), onPressed: () => Navigator.pop(context)),
+        title: Text(l.addNodeStatusPanel, style: const TextStyle(color: Colors.black, fontSize: 18, fontWeight: FontWeight.bold)),
+        bottom: PreferredSize(preferredSize: const Size.fromHeight(1), child: Container(color: Colors.grey.shade300, height: 1)),
+      ),
       body: Form(key: _formKey, child: ListView(children: [
-        _fieldRow('Panel name', _panelNameCtrl, required: true,
+        _fieldRow(l.panelName, _panelNameCtrl, required: true,
             trailingIcon: const Icon(Icons.remove_red_eye_outlined, color: Colors.black45, size: 22),
-            validator: (v) => (v==null||v.isEmpty) ? 'Required' : null),
-        _checkRow('Disable dashboard prefix topic', _disableDashboardPrefix, (v) => setState(() => _disableDashboardPrefix = v), showHelp: true),
-        _fieldRow('Topic', _topicCtrl, required: true, validator: (v) => (v==null||v.isEmpty) ? 'Required' : null),
-        _fieldRow('Subscribe Topic', _subscribeTopicCtrl, showHelp: true),
-        _fieldRow('Payload sync request', _payloadSyncRequestCtrl, required: true, validator: (v) => (v==null||v.isEmpty) ? 'Required' : null),
-        _fieldRow('Payload online', _payloadOnlineCtrl, required: true, validator: (v) => (v==null||v.isEmpty) ? 'Required' : null),
-        _fieldRow('Payload offline', _payloadOfflineCtrl, required: true, validator: (v) => (v==null||v.isEmpty) ? 'Required' : null),
-        _iconRow('Online icon', true, _onlineIconColor, () => _pickIconColor(true)),
-        _iconRow('Offline icon', false, _offlineIconColor, () => _pickIconColor(false)),
-        _checkRow('Auto sync on load', _autoSyncOnLoad, (v) => setState(() => _autoSyncOnLoad = v)),
-        _checkRow('Enable notification or alarm', _enableNotification, (v) => setState(() => _enableNotification = v), showHelp: true, enabled: false),
-        _checkRow('Payload is JSON Data', _payloadIsJson, (v) => setState(() => _payloadIsJson = v)),
-        _checkRow('Show received timestamp', _showReceivedTimestamp, (v) => setState(() => _showReceivedTimestamp = v)),
-        _checkRow('Show sent timestamp', _showSentTimestamp, (v) => setState(() => _showSentTimestamp = v)),
+            validator: (v) => (v==null||v.isEmpty) ? l.required : null),
+        _checkRow(l.disableDashboardPrefix, _disableDashboardPrefix, (v) => setState(() => _disableDashboardPrefix = v), showHelp: true),
+        _fieldRow(l.topic, _topicCtrl, required: true, validator: (v) => (v==null||v.isEmpty) ? l.required : null),
+        _fieldRow(l.subscribeTopic, _subscribeTopicCtrl, showHelp: true),
+        _fieldRow(l.payloadSyncRequest, _payloadSyncRequestCtrl, required: true, validator: (v) => (v==null||v.isEmpty) ? l.required : null),
+        _fieldRow(l.payloadOnline, _payloadOnlineCtrl, required: true, validator: (v) => (v==null||v.isEmpty) ? l.required : null),
+        _fieldRow(l.payloadOffline, _payloadOfflineCtrl, required: true, validator: (v) => (v==null||v.isEmpty) ? l.required : null),
 
+        // Icon rows
+        _iconRow(l.onlineIcon, true, _onlineIconColor, () => _pickIconColor(true, l), l),
+        _iconRow(l.offlineIcon, false, _offlineIconColor, () => _pickIconColor(false, l), l),
+
+        _checkRow(l.autoSyncOnLoad, _autoSyncOnLoad, (v) => setState(() => _autoSyncOnLoad = v)),
+        _checkRow(l.payloadIsJson, _payloadIsJson, (v) => setState(() => _payloadIsJson = v)),
+        _checkRow(l.showReceivedTimestamp, _showReceivedTimestamp, (v) => setState(() => _showReceivedTimestamp = v)),
+        _checkRow(l.showSentTimestamp, _showSentTimestamp, (v) => setState(() => _showSentTimestamp = v)),
+
+        // QoS and Retain Section
         Column(children: [
           Padding(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6), child: Row(children: [
-            SizedBox(width: 28, height: 28, child: Checkbox(value: _retain, onChanged: (v) => setState(() => _retain = v ?? false),
-                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                side: const BorderSide(color: Colors.black54, width: 1.5),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(2)))),
-            const SizedBox(width: 12),
-            const Text('Retain', style: TextStyle(fontSize: 15, color: Colors.black87)),
+            Checkbox(value: _retain, onChanged: (v) => setState(() => _retain = v ?? false)),
+            Text(l.retain, style: const TextStyle(fontSize: 15)),
             const Spacer(),
-            const Text('QoS', style: TextStyle(fontSize: 15, color: Colors.black87)),
+            const Text('QoS', style: TextStyle(fontSize: 15)),
             const SizedBox(width: 8),
-            DropdownButton<int>(value: _qos, underline: Container(height: 1, color: Colors.black26),
-                style: const TextStyle(fontSize: 15, color: Colors.black87),
-                icon: const Icon(Icons.arrow_drop_down, color: Colors.black54),
-                items: _qosOptions.map((q) => DropdownMenuItem(value: q, child: Text('$q'))).toList(),
+            DropdownButton<int>(value: _qos, items: _qosOptions.map((q) => DropdownMenuItem(value: q, child: Text('$q'))).toList(),
                 onChanged: (v) => setState(() => _qos = v!)),
           ])),
           _divider(),
         ]),
 
+        // Action Buttons
         Padding(padding: const EdgeInsets.fromLTRB(16, 24, 16, 36), child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-          SizedBox(width: 130, height: 44, child: OutlinedButton(
-              style: OutlinedButton.styleFrom(side: const BorderSide(color: Colors.grey), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4))),
-              onPressed: () => Navigator.pop(context),
-              child: const Text('CANCEL', style: TextStyle(color: Colors.black87, fontWeight: FontWeight.w600, fontSize: 14, letterSpacing: 0.8)))),
+          SizedBox(width: 130, height: 44, child: OutlinedButton(onPressed: () => Navigator.pop(context), child: Text(l.cancel))),
           const SizedBox(width: 16),
           SizedBox(width: 130, height: 44, child: ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1565C0), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)), elevation: 2),
-              onPressed: _create,
-              child: const Text('CREATE', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14, letterSpacing: 0.8)))),
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1565C0)),
+              onPressed: _create, child: Text(l.create, style: const TextStyle(color: Colors.white)))),
         ])),
       ])),
     );

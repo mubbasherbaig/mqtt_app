@@ -69,13 +69,9 @@ class SelectPanelScreen extends StatelessWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    'Select panel type to add',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black87,
-                    ),
+                  Text(
+                    l.selectPanel,
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.black87),
                   ),
                   IconButton(
                     icon: const Icon(Icons.close, color: Colors.black87, size: 26),

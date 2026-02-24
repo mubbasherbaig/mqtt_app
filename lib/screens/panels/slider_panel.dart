@@ -58,13 +58,26 @@ class _AddSliderPanelScreenState extends State<AddSliderPanelScreen> {
   void _create() {
     if (_formKey.currentState!.validate()) {
       Navigator.pop(context, {
-        'type': 'Slider', 'label': _panelNameCtrl.text.trim(),
-        'topic': _topicCtrl.text.trim(), 'subscribeTopic': _subscribeTopicCtrl.text.trim(),
-        'payloadMin': _payloadMinCtrl.text.trim(), 'payloadMax': _payloadMaxCtrl.text.trim(),
-        'sliderStep': _sliderStepCtrl.text.trim(), 'unit': _unitCtrl.text.trim(),
-        'factor': _factorCtrl.text.trim(), 'decimalPrecision': _decimalPrecisionCtrl.text.trim(),
-        'orientation': _orientation, 'sliderColor': _sliderColor.value.toString(),
-        'retain': _retain, 'qos': _qos,
+        'type': 'Slider',
+        'label': _panelNameCtrl.text.trim(),
+        'topic': _topicCtrl.text.trim(),
+        'subscribeTopic': _subscribeTopicCtrl.text.trim(),
+        'payloadMin': _payloadMinCtrl.text.trim(),
+        'payloadMax': _payloadMaxCtrl.text.trim(),
+        'sliderStep': _sliderStepCtrl.text.trim(),
+        'unit': _unitCtrl.text.trim(),
+        'factor': _factorCtrl.text.trim(),
+        'decimalPrecision': _decimalPrecisionCtrl.text.trim(),
+        'orientation': _orientation,
+        'sliderColor': _sliderColor.value.toString(),
+        'retain': _retain,
+        'qos': _qos,
+        // Fixed: Adding missing boolean flags
+        'disableDashboardPrefix': _disableDashboardPrefix,
+        'dynamicColor': _dynamicColor,
+        'payloadIsJson': _payloadIsJson,
+        'showReceivedTimestamp': _showReceivedTimestamp,
+        'showSentTimestamp': _showSentTimestamp,
       });
     }
   }

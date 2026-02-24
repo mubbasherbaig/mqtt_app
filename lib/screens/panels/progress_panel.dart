@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import '../app_localizations.dart';
+import '../app_settings.dart';
 
 class AddProgressPanelScreen extends StatefulWidget {
   const AddProgressPanelScreen({super.key});
@@ -47,11 +51,22 @@ class _AddProgressPanelScreenState extends State<AddProgressPanelScreen> {
   void _create() {
     if (_formKey.currentState!.validate()) {
       Navigator.pop(context, {
-        'type': 'Progress', 'label': _panelNameCtrl.text.trim(),
-        'topic': _topicCtrl.text.trim(), 'payloadMin': _payloadMinCtrl.text.trim(),
-        'payloadMax': _payloadMaxCtrl.text.trim(), 'factor': _factorCtrl.text.trim(),
-        'decimalPrecision': _decimalPrecisionCtrl.text.trim(), 'unit': _unitCtrl.text.trim(),
-        'progressType': _progressType, 'color': _color.value.toString(), 'qos': _qos,
+        'type': 'Progress',
+        'label': _panelNameCtrl.text.trim(),
+        'topic': _topicCtrl.text.trim(),
+        'payloadMin': _payloadMinCtrl.text.trim(),
+        'payloadMax': _payloadMaxCtrl.text.trim(),
+        'factor': _factorCtrl.text.trim(),
+        'decimalPrecision': _decimalPrecisionCtrl.text.trim(),
+        'unit': _unitCtrl.text.trim(),
+        'progressType': _progressType,
+        'color': _color.value.toString(),
+        'qos': _qos,
+        // Adding missing toggle logic
+        'disableDashboardPrefix': _disableDashboardPrefix,
+        'dynamicColor': _dynamicColor,
+        'payloadIsJson': _payloadIsJson,
+        'showReceivedTimestamp': _showReceivedTimestamp,
       });
     }
   }
@@ -126,46 +141,51 @@ class _AddProgressPanelScreenState extends State<AddProgressPanelScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context.watch<AppSettings>().languageCode);
+
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(backgroundColor: Colors.white, elevation: 0,
-          leading: IconButton(icon: const Icon(Icons.arrow_back, color: Colors.black), onPressed: () => Navigator.pop(context)),
-          title: const Text('Add a Progress panel', style: TextStyle(color: Colors.black, fontSize: 20, fontWeight: FontWeight.w600)),
-          bottom: PreferredSize(preferredSize: const Size.fromHeight(1), child: Container(color: Colors.grey.shade300, height: 1))),
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(icon: const Icon(Icons.arrow_back, color: Colors.black), onPressed: () => Navigator.pop(context)),
+        title: Text(l.addProgressPanel, style: const TextStyle(color: Colors.black, fontSize: 18, fontWeight: FontWeight.bold)),
+        bottom: PreferredSize(preferredSize: const Size.fromHeight(1), child: Container(color: Colors.grey.shade300, height: 1)),
+      ),
       body: Form(key: _formKey, child: ListView(children: [
-        _fieldRow('Panel name', _panelNameCtrl, required: true, validator: (v) => (v==null||v.isEmpty) ? 'Required' : null),
-        _checkRow('Disable dashboard prefix topic', _disableDashboardPrefix, (v) => setState(() => _disableDashboardPrefix = v), showHelp: true),
-        _fieldRow('Topic', _topicCtrl, required: true, validator: (v) => (v==null||v.isEmpty) ? 'Required' : null),
-        _doubleFieldRow('Payload min', _payloadMinCtrl, true, 'Payload max', _payloadMaxCtrl, true,
-            v1: (v) => (v==null||v.isEmpty) ? 'Required' : null, v2: (v) => (v==null||v.isEmpty) ? 'Required' : null),
-        _doubleFieldRow('Factor', _factorCtrl, false, 'Decimal precision', _decimalPrecisionCtrl, false),
+        _fieldRow(l.panelName, _panelNameCtrl, required: true, validator: (v) => (v==null||v.isEmpty) ? l.required : null),
+        _checkRow(l.disableDashboardPrefix, _disableDashboardPrefix, (v) => setState(() => _disableDashboardPrefix = v), showHelp: true),
+        _fieldRow(l.topic, _topicCtrl, required: true, validator: (v) => (v==null||v.isEmpty) ? l.required : null),
+
+        _doubleFieldRow(l.payloadMin, _payloadMinCtrl, true, l.payloadMax, _payloadMaxCtrl, true,
+            v1: (v) => (v==null||v.isEmpty) ? l.required : null, v2: (v) => (v==null||v.isEmpty) ? l.required : null),
+
+        _doubleFieldRow(l.factor, _factorCtrl, false, l.decimal, _decimalPrecisionCtrl, false),
+
         // Unit + Progress type
         Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Padding(padding: const EdgeInsets.fromLTRB(16, 18, 16, 0), child: Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const Text('Unit', style: TextStyle(fontSize: 15, color: Colors.black87)),
+              Text(l.unit, style: const TextStyle(fontSize: 15, color: Colors.black87)),
               TextFormField(controller: _unitCtrl, style: const TextStyle(fontSize: 15),
-                  decoration: const InputDecoration(isDense: true, contentPadding: EdgeInsets.only(top: 6, bottom: 8),
-                      enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.black26)),
-                      focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Color(0xFF1E88E5))))),
+                  decoration: const InputDecoration(isDense: true, contentPadding: EdgeInsets.only(top: 6, bottom: 8))),
             ])),
             const SizedBox(width: 24),
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const Text('Progress type', style: TextStyle(fontSize: 13, color: Colors.black54)),
-              DropdownButtonFormField<String>(value: _progressType,
-                  style: const TextStyle(fontSize: 15, color: Colors.black87),
-                  decoration: const InputDecoration(isDense: true, contentPadding: EdgeInsets.only(top: 4, bottom: 8),
-                      enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.black26))),
-                  items: _progressTypes.map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
+              Text(l.progressType, style: const TextStyle(fontSize: 13, color: Colors.black54)),
+              DropdownButtonFormField<String>(
+                  value: _progressType,
+                  items: _progressTypes.map((t) => DropdownMenuItem(value: t, child: Text(l.get(t)))).toList(),
                   onChanged: (v) => setState(() => _progressType = v!)),
             ])),
           ])),
           _divider(),
         ]),
-        // Color
+
+        // Color Section
         Column(children: [
           Padding(padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14), child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-            const Text('Color', style: TextStyle(fontSize: 15, color: Colors.black87)),
+            Text(l.color, style: const TextStyle(fontSize: 15, color: Colors.black87)),
             GestureDetector(onTap: _pickColor, child: Container(width: 110, height: 36,
                 decoration: BoxDecoration(color: _color, borderRadius: BorderRadius.circular(4)),
                 alignment: Alignment.centerRight, padding: const EdgeInsets.only(right: 8),
@@ -173,33 +193,19 @@ class _AddProgressPanelScreenState extends State<AddProgressPanelScreen> {
           ])),
           _divider(),
         ]),
-        _checkRow('Dynamic color', _dynamicColor, (v) => setState(() => _dynamicColor = v)),
-        _checkRow('Enable notification or alarm', _enableNotification, (v) => setState(() => _enableNotification = v), showHelp: true, enabled: _dynamicColor),
-        _checkRow('Payload is JSON Data', _payloadIsJson, (v) => setState(() => _payloadIsJson = v)),
-        _checkRow('Show received timestamp', _showReceivedTimestamp, (v) => setState(() => _showReceivedTimestamp = v)),
-        Column(children: [
-          Padding(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6), child: Row(children: [
-            const Spacer(),
-            const Text('QoS', style: TextStyle(fontSize: 15, color: Colors.black87)),
-            const SizedBox(width: 8),
-            DropdownButton<int>(value: _qos, underline: Container(height: 1, color: Colors.black26),
-                style: const TextStyle(fontSize: 15, color: Colors.black87),
-                icon: const Icon(Icons.arrow_drop_down, color: Colors.black54),
-                items: _qosOptions.map((q) => DropdownMenuItem(value: q, child: Text('$q'))).toList(),
-                onChanged: (v) => setState(() => _qos = v!)),
-          ])),
-          _divider(),
-        ]),
+
+        _checkRow(l.dynamicColor, _dynamicColor, (v) => setState(() => _dynamicColor = v)),
+        _checkRow(l.payloadIsJson, _payloadIsJson, (v) => setState(() => _payloadIsJson = v)),
+        _checkRow(l.showReceivedTimestamp, _showReceivedTimestamp, (v) => setState(() => _showReceivedTimestamp = v)),
+
+        // Footer Actions
         Padding(padding: const EdgeInsets.fromLTRB(16, 24, 16, 36), child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-          SizedBox(width: 130, height: 44, child: OutlinedButton(
-              style: OutlinedButton.styleFrom(side: const BorderSide(color: Colors.grey), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4))),
-              onPressed: () => Navigator.pop(context),
-              child: const Text('CANCEL', style: TextStyle(color: Colors.black87, fontWeight: FontWeight.w600, fontSize: 14, letterSpacing: 0.8)))),
+          SizedBox(width: 130, height: 44, child: OutlinedButton(onPressed: () => Navigator.pop(context), child: Text(l.cancel))),
           const SizedBox(width: 16),
           SizedBox(width: 130, height: 44, child: ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1565C0), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)), elevation: 2),
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1565C0)),
               onPressed: _create,
-              child: const Text('CREATE', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14, letterSpacing: 0.8)))),
+              child: Text(l.create, style: const TextStyle(color: Colors.white)))),
         ])),
       ])),
     );

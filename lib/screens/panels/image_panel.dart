@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import '../app_localizations.dart';
+import '../app_settings.dart';
 
 class AddImagePanelScreen extends StatefulWidget {
   const AddImagePanelScreen({super.key});
@@ -78,57 +82,81 @@ class _AddImagePanelScreenState extends State<AddImagePanelScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context.watch<AppSettings>().languageCode);
+
+    final Map<String, String> sourceLabels = {
+      'URL Payload': l.urlPayload,
+      'Base64 Payload': l.base64Payload,
+      'Binary Payload': l.binaryPayload,
+    };
+
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(backgroundColor: Colors.white, elevation: 0,
+      appBar: AppBar(
+          backgroundColor: Colors.white,
+          elevation: 0,
           leading: IconButton(icon: const Icon(Icons.arrow_back, color: Colors.black), onPressed: () => Navigator.pop(context)),
-          title: const Text('Add an Image panel', style: TextStyle(color: Colors.black, fontSize: 20, fontWeight: FontWeight.w600)),
+          title: Text(l.addImagePanel, style: const TextStyle(color: Colors.black, fontSize: 18, fontWeight: FontWeight.bold)),
           bottom: PreferredSize(preferredSize: const Size.fromHeight(1), child: Container(color: Colors.grey.shade300, height: 1))),
-      body: Form(key: _formKey, child: ListView(children: [
-        _field('Panel name', _panelNameCtrl, req: true, val: (v) => (v==null||v.isEmpty) ? 'Required' : null),
-        _check('Disable dashboard prefix topic', _disableDashboardPrefix, (v) => setState(() => _disableDashboardPrefix = v), help: true),
-        _field('Topic', _topicCtrl, req: true, val: (v) => (v==null||v.isEmpty) ? 'Required' : null),
-        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Padding(padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const Text('Image source', style: TextStyle(fontSize: 13, color: Colors.black54)),
-            DropdownButtonFormField<String>(value: _imageSource, style: const TextStyle(fontSize: 15, color: Colors.black87),
-                decoration: const InputDecoration(isDense: true, contentPadding: EdgeInsets.only(top: 4, bottom: 8),
-                    enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.black26))),
-                items: _imageSources.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
-                onChanged: (v) => setState(() => _imageSource = v!)),
+      body: Form(
+          key: _formKey,
+          child: ListView(children: [
+            _field(l.panelName, _panelNameCtrl, req: true, val: (v) => (v == null || v.isEmpty) ? l.required : null),
+            _check(l.disableDashboardPrefix, _disableDashboardPrefix, (v) => setState(() => _disableDashboardPrefix = v), help: true),
+            _field(l.topic, _topicCtrl, req: true, val: (v) => (v == null || v.isEmpty) ? l.required : null),
+
+            Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text(l.imageSource, style: const TextStyle(fontSize: 13, color: Colors.black54)),
+                    DropdownButtonFormField<String>(
+                        value: _imageSource,
+                        style: const TextStyle(fontSize: 15, color: Colors.black87),
+                        decoration: const InputDecoration(isDense: true, contentPadding: EdgeInsets.only(top: 4, bottom: 8), enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.black26))),
+                        items: sourceLabels.entries.map((e) => DropdownMenuItem(value: e.key, child: Text(e.value))).toList(),
+                        onChanged: (v) => setState(() => _imageSource = v!)),
+                  ])),
+              _d(),
+            ]),
+
+            _check(l.autoRefresh, _autoRefresh, (v) => setState(() => _autoRefresh = v)),
+            _check(l.fitToPanelWidth, _fitToPanelWidth, (v) => setState(() => _fitToPanelWidth = v)),
+            _check(l.payloadIsJson, _payloadIsJson, (v) => setState(() => _payloadIsJson = v)),
+            _check(l.showReceivedTimestamp, _showReceivedTimestamp, (v) => setState(() => _showReceivedTimestamp = v)),
+
+            Column(children: [
+              Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  child: Row(children: [
+                    const Spacer(),
+                    const Text('QoS', style: TextStyle(fontSize: 15, color: Colors.black87)),
+                    const SizedBox(width: 8),
+                    DropdownButton<int>(
+                        value: _qos,
+                        underline: Container(height: 1, color: Colors.black26),
+                        style: const TextStyle(fontSize: 15, color: Colors.black87),
+                        icon: const Icon(Icons.arrow_drop_down, color: Colors.black54),
+                        items: _qosOptions.map((q) => DropdownMenuItem(value: q, child: Text('$q'))).toList(),
+                        onChanged: (v) => setState(() => _qos = v!)),
+                  ])),
+              _d(),
+            ]),
+
+            Padding(
+                padding: const EdgeInsets.fromLTRB(16, 24, 16, 36),
+                child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                  SizedBox(width: 130, height: 44, child: OutlinedButton(onPressed: () => Navigator.pop(context), child: Text(l.cancel))),
+                  const SizedBox(width: 16),
+                  SizedBox(
+                      width: 130,
+                      height: 44,
+                      child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1565C0)),
+                          onPressed: _create,
+                          child: Text(l.create, style: const TextStyle(color: Colors.white)))),
+                ])),
           ])),
-          _d(),
-        ]),
-        _check('Auto refresh', _autoRefresh, (v) => setState(() => _autoRefresh = v)),
-        _check('Fit to panel width', _fitToPanelWidth, (v) => setState(() => _fitToPanelWidth = v)),
-        _check('Enable notification or alarm', _enableNotification, (v) => setState(() => _enableNotification = v), help: true, enabled: false),
-        _check('Payload is JSON Data', _payloadIsJson, (v) => setState(() => _payloadIsJson = v)),
-        _check('Show received timestamp', _showReceivedTimestamp, (v) => setState(() => _showReceivedTimestamp = v)),
-        Column(children: [
-          Padding(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6), child: Row(children: [
-            const Spacer(),
-            const Text('QoS', style: TextStyle(fontSize: 15, color: Colors.black87)),
-            const SizedBox(width: 8),
-            DropdownButton<int>(value: _qos, underline: Container(height: 1, color: Colors.black26),
-                style: const TextStyle(fontSize: 15, color: Colors.black87),
-                icon: const Icon(Icons.arrow_drop_down, color: Colors.black54),
-                items: _qosOptions.map((q) => DropdownMenuItem(value: q, child: Text('$q'))).toList(),
-                onChanged: (v) => setState(() => _qos = v!)),
-          ])),
-          _d(),
-        ]),
-        Padding(padding: const EdgeInsets.fromLTRB(16, 24, 16, 36), child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-          SizedBox(width: 130, height: 44, child: OutlinedButton(
-              style: OutlinedButton.styleFrom(side: const BorderSide(color: Colors.grey), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4))),
-              onPressed: () => Navigator.pop(context),
-              child: const Text('CANCEL', style: TextStyle(color: Colors.black87, fontWeight: FontWeight.w600, fontSize: 14, letterSpacing: 0.8)))),
-          const SizedBox(width: 16),
-          SizedBox(width: 130, height: 44, child: ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1565C0), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)), elevation: 2),
-              onPressed: _create,
-              child: const Text('CREATE', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14, letterSpacing: 0.8)))),
-        ])),
-      ])),
     );
   }
 }
