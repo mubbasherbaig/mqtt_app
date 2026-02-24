@@ -22,6 +22,10 @@ import 'package:mqtt_app/screens/panels/image_panel.dart';
 import 'package:mqtt_app/screens/panels/layout_decorator_panel.dart';
 import 'package:mqtt_app/screens/panels/line_graph_panel.dart';
 import 'package:mqtt_app/screens/panels/uri_launcher_panel.dart';
+import 'package:provider/provider.dart';
+
+import 'app_localizations.dart';
+import 'app_settings.dart';
 
 class SelectPanelScreen extends StatelessWidget {
   const SelectPanelScreen({super.key});
@@ -52,6 +56,7 @@ class SelectPanelScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context.watch<AppSettings>().languageCode);
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(

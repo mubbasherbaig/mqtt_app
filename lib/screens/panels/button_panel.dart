@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import '../app_localizations.dart';
+import '../app_settings.dart';
 
 class AddButtonPanelScreen extends StatefulWidget {
   const AddButtonPanelScreen({super.key});
@@ -225,6 +229,7 @@ class _AddButtonPanelScreenState extends State<AddButtonPanelScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context.watch<AppSettings>().languageCode);
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(

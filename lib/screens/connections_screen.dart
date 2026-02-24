@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:mqtt_app/screens/panels/add_connection_screen.dart';
+import 'package:provider/provider.dart';
+import 'package:mqtt_app/screens/add_connection_screen.dart';
+import 'app_localizations.dart';
+import 'app_settings.dart';
+import 'app_setttings_screen.dart';
 import 'dashboard_screen.dart';
 import '../services/storage_service.dart';
 
@@ -37,6 +41,9 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final settings = context.watch<AppSettings>();
+    final l = AppLocalizations.of(settings.languageCode);
+
     return Scaffold(
       backgroundColor: Colors.white,
       drawer: const AppDrawer(),
@@ -44,105 +51,113 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
         backgroundColor: Colors.white,
         elevation: 0,
         leading: Builder(
-          builder: (context) => IconButton(
+          builder: (ctx) => IconButton(
             icon: const Icon(Icons.menu, color: Colors.black, size: 28),
-            onPressed: () => Scaffold.of(context).openDrawer(),
+            onPressed: () => Scaffold.of(ctx).openDrawer(),
           ),
         ),
-        title: const Text('Connections',
-            style: TextStyle(color: Colors.black, fontSize: 22, fontWeight: FontWeight.w600)),
+        title: Text(
+          l.connections,
+          style: const TextStyle(
+              color: Colors.black, fontSize: 22, fontWeight: FontWeight.w600),
+        ),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
           child: Container(color: Colors.grey.shade300, height: 1),
         ),
       ),
-      body: _connections.isEmpty ? _buildEmptyState() : _buildConnectionsList(),
+      body: _connections.isEmpty
+          ? _buildEmptyState(l)
+          : _buildConnectionsList(l),
       floatingActionButton: _connections.isNotEmpty
-          ? Row(
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: [
-          FloatingActionButton(
-            heroTag: 'fab_import',
-            onPressed: () {},
-            backgroundColor: const Color(0xFF1E88E5),
-            shape: const CircleBorder(),
-            child: const Icon(Icons.description, color: Colors.white),
-          ),
-          const SizedBox(width: 12),
-          FloatingActionButton(
-            heroTag: 'fab_add',
-            onPressed: _goToAddConnection,
-            backgroundColor: const Color(0xFF1E88E5),
-            shape: const CircleBorder(),
-            child: const Icon(Icons.add, color: Colors.white),
-          ),
-        ],
+          ? FloatingActionButton(
+        backgroundColor: const Color(0xFF1565C0),
+        child: const Icon(Icons.add, color: Colors.white),
+        onPressed: _goToAddConnection,
       )
           : null,
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(AppLocalizations l) {
     return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 40),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text(
-              'You do not have any connection to communicate with MQTT broker. If you are using this application for the first time, we highly recomend to go through FAQ and User Guide from main menu.',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 16, color: Colors.black87, height: 1.6),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.wifi_off, size: 72, color: Colors.grey.shade300),
+          const SizedBox(height: 24),
+          Text(
+            l.noConnections,
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 16, color: Colors.grey.shade500),
+          ),
+          const SizedBox(height: 32),
+          ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF1565C0),
+              padding:
+              const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8)),
             ),
-            const SizedBox(height: 40),
-            SizedBox(
-              width: 260, height: 50,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFE53935),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                ),
-                onPressed: _goToAddConnection,
-                child: const Text('SETUP A CONNECTION',
-                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15, letterSpacing: 1.2)),
-              ),
+            onPressed: _goToAddConnection,
+            icon: const Icon(Icons.add, color: Colors.white),
+            label: Text(
+              l.addConnection,
+              style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildConnectionsList() {
+  Widget _buildConnectionsList(AppLocalizations l) {
     return ListView.separated(
       itemCount: _connections.length,
-      separatorBuilder: (_, __) => const Divider(height: 1),
+      separatorBuilder: (_, __) =>
+      const Divider(height: 1, color: Color(0xFFE0E0E0)),
       itemBuilder: (context, index) {
         final conn = _connections[index];
         return ListTile(
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-          title: Text(conn['name'] ?? '',
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
+          contentPadding:
+          const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          title: Text(
+            conn['name'] ?? '',
+            style: const TextStyle(
+                fontSize: 16, fontWeight: FontWeight.w500),
+          ),
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                width: 40, height: 40,
-                decoration: BoxDecoration(color: Colors.grey.shade200, shape: BoxShape.circle),
-                child: const Icon(Icons.cloud_off, color: Colors.black54, size: 20),
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                    color: Colors.grey.shade200,
+                    shape: BoxShape.circle),
+                child: const Icon(Icons.cloud_off,
+                    color: Colors.black54, size: 20),
               ),
               const SizedBox(width: 8),
               Container(
-                width: 40, height: 40,
-                decoration: BoxDecoration(color: Colors.grey.shade200, shape: BoxShape.circle),
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                    color: Colors.grey.shade200,
+                    shape: BoxShape.circle),
                 child: PopupMenuButton<String>(
-                  icon: const Icon(Icons.more_vert, color: Colors.black87),
+                  icon: const Icon(Icons.more_vert,
+                      color: Colors.black87),
                   onSelected: (value) {
                     if (value == 'delete') _deleteConnection(index);
                   },
                   itemBuilder: (_) => [
-                    const PopupMenuItem(value: 'edit', child: Text('Edit')),
-                    const PopupMenuItem(value: 'delete', child: Text('Delete')),
+                    PopupMenuItem(value: 'edit',   child: Text(l.edit)),
+                    PopupMenuItem(value: 'delete', child: Text(l.delete)),
                   ],
                 ),
               ),
@@ -151,7 +166,13 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
           onTap: () {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => DashboardScreen(connection: conn, connectionIndex: index, dashboardIndex: 0)),
+              MaterialPageRoute(
+                builder: (_) => DashboardScreen(
+                  connection: conn,
+                  connectionIndex: index,
+                  dashboardIndex: 0,
+                ),
+              ),
             );
           },
         );
@@ -166,36 +187,90 @@ class AppDrawer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final settings = context.watch<AppSettings>();
+    final l = AppLocalizations.of(settings.languageCode);
+
     return Drawer(
       backgroundColor: Colors.white,
       child: Column(
         children: [
+          // Header
           Container(
-            height: 200, color: Colors.white,
+            height: 200,
+            color: Colors.white,
             alignment: Alignment.center,
-            child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-              const SizedBox(height: 30),
-              Container(
-                width: 120, height: 120,
-                decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(12)),
-                child: const _HouseWifiIcon(),
-              ),
-            ]),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const SizedBox(height: 30),
+                Container(
+                  width: 120,
+                  height: 120,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const _HouseWifiIcon(),
+                ),
+              ],
+            ),
           ),
           const Divider(height: 1),
-          _DrawerItem(icon: Icons.list, label: 'All Connections', onTap: () => Navigator.pop(context)),
+
+          _DrawerItem(
+            icon: Icons.list,
+            label: l.allConnections,
+            onTap: () => Navigator.pop(context),
+          ),
           const Divider(height: 1),
-          _DrawerItem(icon: Icons.settings_outlined, label: 'App Settings', onTap: () => Navigator.pop(context)),
+
+          _DrawerItem(
+            icon: Icons.settings_outlined,
+            label: l.appSettings,
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (_) => const AppSettingsScreen()),
+              );
+            },
+          ),
           const Divider(height: 1),
-          _DrawerItem(icon: Icons.sync, label: 'Backup and Restore', onTap: () => Navigator.pop(context)),
+
+          _DrawerItem(
+            icon: Icons.sync,
+            label: l.backupRestore,
+            onTap: () => Navigator.pop(context),
+          ),
           const Divider(height: 1),
-          _DrawerItem(icon: Icons.help_outline, label: 'Help and FAQ', onTap: () => Navigator.pop(context)),
+
+          _DrawerItem(
+            icon: Icons.help_outline,
+            label: l.helpFaq,
+            onTap: () => Navigator.pop(context),
+          ),
           const Divider(height: 1),
-          _DrawerItem(icon: Icons.menu_book_outlined, label: 'User Guide', onTap: () => Navigator.pop(context)),
+
+          _DrawerItem(
+            icon: Icons.menu_book_outlined,
+            label: l.userGuide,
+            onTap: () => Navigator.pop(context),
+          ),
           const Divider(height: 1),
-          _DrawerItem(icon: Icons.info_outline, label: 'About', onTap: () => Navigator.pop(context)),
+
+          _DrawerItem(
+            icon: Icons.info_outline,
+            label: l.about,
+            onTap: () => Navigator.pop(context),
+          ),
           const Divider(height: 1),
-          _DrawerItem(icon: Icons.exit_to_app, label: 'Exit', onTap: () => Navigator.pop(context)),
+
+          _DrawerItem(
+            icon: Icons.exit_to_app,
+            label: l.exit,
+            onTap: () => Navigator.pop(context),
+          ),
           const Divider(height: 1),
         ],
       ),
@@ -203,39 +278,51 @@ class AppDrawer extends StatelessWidget {
   }
 }
 
+// ─────────────────────────── Drawer item ───────────────────────────
 class _DrawerItem extends StatelessWidget {
-  final IconData icon; final String label; final VoidCallback onTap;
-  const _DrawerItem({required this.icon, required this.label, required this.onTap});
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  const _DrawerItem({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
   @override
-  Widget build(BuildContext context) => ListTile(
-    leading: Icon(icon, color: Colors.black54, size: 22),
-    title: Text(label, style: const TextStyle(fontSize: 16, color: Colors.black87)),
-    onTap: onTap,
-    contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 2),
-  );
+  Widget build(BuildContext context) {
+    return ListTile(
+      leading: Icon(icon, color: Colors.black87, size: 24),
+      title: Text(label,
+          style: const TextStyle(fontSize: 15, color: Colors.black87)),
+      onTap: onTap,
+    );
+  }
 }
 
+// ─────────────────────────── House + Wifi icon ───────────────────────────
 class _HouseWifiIcon extends StatelessWidget {
   const _HouseWifiIcon();
-  @override
-  Widget build(BuildContext context) => CustomPaint(painter: _HouseWifiPainter());
-}
 
-class _HouseWifiPainter extends CustomPainter {
   @override
-  void paint(Canvas canvas, Size size) {
-    final roofPaint = Paint()..color = const Color(0xFFB71C1C)..style = PaintingStyle.fill;
-    final wallPaint = Paint()..color = Colors.grey.shade300..style = PaintingStyle.fill;
-    final wifiPaint = Paint()..color = const Color(0xFF1E88E5)..style = PaintingStyle.stroke..strokeWidth = 4..strokeCap = StrokeCap.round;
-    final dotPaint = Paint()..color = const Color(0xFF1E88E5)..style = PaintingStyle.fill;
-    final w = size.width; final h = size.height;
-    canvas.drawRect(Rect.fromLTWH(w*0.15, h*0.45, w*0.7, h*0.45), wallPaint);
-    canvas.drawPath(Path()..moveTo(w*0.5,h*0.08)..lineTo(w*0.88,h*0.48)..lineTo(w*0.12,h*0.48)..close(), roofPaint);
-    final center = Offset(w*0.5, h*0.72);
-    for (final d in [0.5, 0.32, 0.14]) {
-      canvas.drawArc(Rect.fromCenter(center: center, width: w*d, height: w*d), 3.14+0.5, 2.14, false, wifiPaint);
-    }
-    canvas.drawCircle(center, 4, dotPaint);
+  Widget build(BuildContext context) {
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        const Icon(Icons.home_outlined, size: 60, color: Color(0xFF1565C0)),
+        Positioned(
+          bottom: 20,
+          right: 20,
+          child: Container(
+            padding: const EdgeInsets.all(2),
+            decoration: const BoxDecoration(
+                color: Colors.white, shape: BoxShape.circle),
+            child: const Icon(Icons.wifi,
+                size: 22, color: Color(0xFF1565C0)),
+          ),
+        ),
+      ],
+    );
   }
-  @override bool shouldRepaint(_) => false;
 }

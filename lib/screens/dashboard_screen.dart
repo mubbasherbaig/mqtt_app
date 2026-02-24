@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'app_localizations.dart';
+import 'app_settings.dart';
 import 'select_panel_screen.dart';
 import '../services/storage_service.dart';
 
@@ -51,6 +54,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final settings = context.watch<AppSettings>();
+    final l = AppLocalizations.of(settings.languageCode);
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -62,27 +68,32 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
         title: Text(
           _connectionName,
-          style: const TextStyle(color: Colors.black, fontSize: 22, fontWeight: FontWeight.w600),
+          style: const TextStyle(
+              color: Colors.black, fontSize: 22, fontWeight: FontWeight.w600),
         ),
         actions: [
           Container(
             margin: const EdgeInsets.only(right: 8),
             width: 40, height: 40,
-            decoration: BoxDecoration(color: Colors.grey.shade200, shape: BoxShape.circle),
+            decoration: BoxDecoration(
+                color: Colors.grey.shade200, shape: BoxShape.circle),
             child: const Icon(Icons.cloud_off, color: Colors.black54, size: 20),
           ),
           Container(
             margin: const EdgeInsets.only(right: 12),
             width: 40, height: 40,
-            decoration: BoxDecoration(color: Colors.grey.shade200, shape: BoxShape.circle),
+            decoration: BoxDecoration(
+                color: Colors.grey.shade200, shape: BoxShape.circle),
             child: PopupMenuButton<String>(
               icon: const Icon(Icons.more_vert, color: Colors.black87),
               onSelected: (value) {
                 if (value == 'add_panel') _addPanel();
               },
               itemBuilder: (_) => [
-                const PopupMenuItem(value: 'add_panel', child: Text('Add Panel')),
-                const PopupMenuItem(value: 'settings', child: Text('Connection Settings')),
+                PopupMenuItem(
+                    value: 'add_panel', child: Text(l.addPanel)),
+                PopupMenuItem(
+                    value: 'settings', child: Text(l.connectionSettings)),
               ],
             ),
           ),
@@ -92,11 +103,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
           child: Container(color: Colors.grey.shade300, height: 1),
         ),
       ),
-      body: _panels.isEmpty ? _buildEmptyState() : _buildPanelsList(),
+      body: _panels.isEmpty ? _buildEmptyState(l) : _buildPanelsList(l),
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(AppLocalizations l) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -112,11 +123,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF1E88E5),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(6)),
               ),
               onPressed: _addPanel,
-              child: const Text('ADD A PANEL',
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, letterSpacing: 1.2)),
+              child: Text(
+                l.addPanel.toUpperCase(),
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.2),
+              ),
             ),
           ),
         ],
@@ -124,7 +141,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildPanelsList() {
+  Widget _buildPanelsList(AppLocalizations l) {
     return ListView.builder(
       padding: const EdgeInsets.all(16),
       itemCount: _panels.length,
@@ -133,10 +150,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
         return Card(
           margin: const EdgeInsets.only(bottom: 12),
           child: ListTile(
-            leading: Icon(_getPanelIcon(panel['type']), color: const Color(0xFF1E88E5)),
+            leading: Icon(_getPanelIcon(panel['type']),
+                color: const Color(0xFF1E88E5)),
             title: Text(panel['panelName'] ?? panel['type'] ?? 'Panel'),
-            subtitle: panel['topic'] != null && panel['topic'].toString().isNotEmpty
-                ? Text('Topic: ${panel['topic']}')
+            subtitle: panel['topic'] != null &&
+                panel['topic'].toString().isNotEmpty
+                ? Text('${l.topic}: ${panel['topic']}')
                 : null,
             trailing: IconButton(
               icon: const Icon(Icons.delete_outline, color: Colors.red),
@@ -150,18 +169,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   IconData _getPanelIcon(String? type) {
     switch (type) {
-      case 'Button': return Icons.crop_square;
-      case 'Switch': return Icons.toggle_on;
-      case 'Slider': return Icons.linear_scale;
-      case 'Text Input': return Icons.chat_bubble_outline;
-      case 'Text Output': return Icons.notes;
-      case 'Node Status': return Icons.wifi_tethering;
-      case 'LED Indicator': return Icons.notifications;
-      case 'Gauge': return Icons.speed;
-      case 'Line Graph': return Icons.show_chart;
-      case 'Bar Graph': return Icons.bar_chart;
-      case 'Chart': return Icons.pie_chart;
-      default: return Icons.dashboard;
+      case 'Button':               return Icons.crop_square;
+      case 'Switch':               return Icons.toggle_on;
+      case 'Slider':               return Icons.linear_scale;
+      case 'Text Input':           return Icons.chat_bubble_outline;
+      case 'Text Output':          return Icons.notes;
+      case 'Node Status':          return Icons.wifi_tethering;
+      case 'LED Indicator':        return Icons.notifications;
+      case 'Gauge':                return Icons.speed;
+      case 'Line Graph':           return Icons.show_chart;
+      case 'Bar Graph':            return Icons.bar_chart;
+      case 'Chart':                return Icons.pie_chart;
+      default:                     return Icons.dashboard;
     }
   }
 }
