@@ -3,6 +3,7 @@ import 'package:mqtt_app/screens/app_settings.dart';
 import 'package:provider/provider.dart';
 import 'screens/connections_screen.dart';
 import 'services/storage_service.dart';
+import 'services/mqtt_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -11,9 +12,14 @@ void main() async {
   final appSettings = AppSettings();
   await appSettings.init();
 
+  final mqttService = MqttService();
+
   runApp(
-    ChangeNotifierProvider<AppSettings>.value(
-      value: appSettings,
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider<AppSettings>.value(value: appSettings),
+        ChangeNotifierProvider<MqttService>.value(value: mqttService),
+      ],
       child: const MqttApp(),
     ),
   );
