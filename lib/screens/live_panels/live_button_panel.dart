@@ -90,7 +90,7 @@ class _LiveButtonPanelState extends State<LiveButtonPanel> {
           ),
           alignment: Alignment.center,
           child: Text(
-            widget.panel['panelName'] as String? ?? 'PRESS',
+            widget.panel['panelName'] as String? ?? widget.panel['label'] as String? ?? 'PRESS',
             style: const TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,

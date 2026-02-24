@@ -13,6 +13,21 @@ import 'live_panels/live_text_output_panel.dart';
 import 'live_panels/live_text_input_panel.dart';
 import 'live_panels/live_slider_panel.dart';
 import 'live_panels/live_node_status_panel.dart';
+import 'live_panels/live_led_indicator_panel.dart';
+import 'live_panels/live_multi_state_indicator_panel.dart';
+import 'live_panels/live_combo_box_panel.dart';
+import 'live_panels/live_radio_buttons_panel.dart';
+import 'live_panels/live_progress_panel.dart';
+import 'live_panels/live_gauge_panel.dart';
+import 'live_panels/live_line_graph_panel.dart';
+import 'live_panels/live_bar_graph_panel.dart';
+import 'live_panels/live_chart_panel.dart';
+import 'live_panels/live_color_picker_panel.dart';
+import 'live_panels/live_date_time_picker_panel.dart';
+import 'live_panels/live_image_panel.dart';
+import 'live_panels/live_barcode_scanner_panel.dart';
+import 'live_panels/live_uri_launcher_panel.dart';
+import 'live_panels/live_layout_decorator_panel.dart';
 
 class DashboardScreen extends StatefulWidget {
   final Map<String, dynamic> connection;
@@ -252,7 +267,7 @@ class _PanelCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final type = panel['type'] as String? ?? '';
-    final name = panel['panelName'] as String? ?? type;
+    final name = panel['panelName'] as String? ?? panel['label'] as String? ?? type;
 
     return Card(
       elevation: 2,
@@ -299,46 +314,54 @@ class _PanelCard extends StatelessWidget {
     final topic = _effectiveTopic(rawTopic);
     final qos = int.tryParse(panel['qos']?.toString() ?? '0') ?? 0;
 
+    // Apply dashboard prefix to subscribeTopic as well
+    final rawSub = panel['subscribeTopic'] as String? ?? '';
+    final enriched = Map<String, dynamic>.from(panel);
+    if (rawSub.isNotEmpty) enriched['subscribeTopic'] = _effectiveTopic(rawSub);
+
     switch (type) {
       case 'Button':
-        return LiveButtonPanel(
-          panel: panel,
-          topic: topic,
-          mqtt: mqtt,
-        );
+        return LiveButtonPanel(panel: enriched, topic: topic, mqtt: mqtt);
       case 'Switch':
-        return LiveSwitchPanel(
-          panel: panel,
-          topic: topic,
-          mqtt: mqtt,
-          qos: qos,
-        );
+        return LiveSwitchPanel(panel: enriched, topic: topic, mqtt: mqtt, qos: qos);
       case 'Text Output':
-        return LiveTextOutputPanel(
-          panel: panel,
-          topic: topic,
-          mqtt: mqtt,
-        );
+        return LiveTextOutputPanel(panel: enriched, topic: topic, mqtt: mqtt);
       case 'Text Input':
-        return LiveTextInputPanel(
-          panel: panel,
-          topic: topic,
-          mqtt: mqtt,
-          qos: qos,
-        );
+        return LiveTextInputPanel(panel: enriched, topic: topic, mqtt: mqtt, qos: qos);
       case 'Slider':
-        return LiveSliderPanel(
-          panel: panel,
-          topic: topic,
-          mqtt: mqtt,
-          qos: qos,
-        );
+        return LiveSliderPanel(panel: enriched, topic: topic, mqtt: mqtt, qos: qos);
       case 'Node Status':
-        return LiveNodeStatusPanel(
-          panel: panel,
-          topic: topic,
-          mqtt: mqtt,
-        );
+        return LiveNodeStatusPanel(panel: enriched, topic: topic, mqtt: mqtt);
+      case 'LED Indicator':
+        return LiveLedIndicatorPanel(panel: enriched, topic: topic, mqtt: mqtt);
+      case 'Multi-State Indicator':
+        return LiveMultiStateIndicatorPanel(panel: enriched, topic: topic, mqtt: mqtt);
+      case 'Combo Box':
+        return LiveComboBoxPanel(panel: enriched, topic: topic, mqtt: mqtt, qos: qos);
+      case 'Radio Buttons':
+        return LiveRadioButtonsPanel(panel: enriched, topic: topic, mqtt: mqtt, qos: qos);
+      case 'Progress':
+        return LiveProgressPanel(panel: enriched, topic: topic, mqtt: mqtt);
+      case 'Gauge':
+        return LiveGaugePanel(panel: enriched, topic: topic, mqtt: mqtt);
+      case 'Line Graph':
+        return LiveLineGraphPanel(panel: enriched, dashboardPrefix: dashboardPrefix, mqtt: mqtt);
+      case 'Bar Graph':
+        return LiveBarGraphPanel(panel: enriched, dashboardPrefix: dashboardPrefix, mqtt: mqtt);
+      case 'Chart':
+        return LiveChartPanel(panel: enriched, dashboardPrefix: dashboardPrefix, mqtt: mqtt);
+      case 'Color Picker':
+        return LiveColorPickerPanel(panel: enriched, topic: topic, mqtt: mqtt, qos: qos);
+      case 'Date & Time Picker':
+        return LiveDateTimePickerPanel(panel: enriched, topic: topic, mqtt: mqtt, qos: qos);
+      case 'Image':
+        return LiveImagePanel(panel: enriched, topic: topic, mqtt: mqtt);
+      case 'Barcode Scanner':
+        return LiveBarcodeScannerPanel(panel: enriched, topic: topic, mqtt: mqtt, qos: qos);
+      case 'URI Launcher':
+        return LiveUriLauncherPanel(panel: enriched, topic: topic, mqtt: mqtt);
+      case 'Layout Decorator':
+        return LiveLayoutDecoratorPanel(panel: enriched);
       default:
         return Center(
           child: Column(
