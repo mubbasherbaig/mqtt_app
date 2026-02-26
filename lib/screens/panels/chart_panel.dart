@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../app_localizations.dart';
 import '../app_settings.dart';
+import '../widgets/icon_picker_sheet.dart';
+import '../widgets/panel_icon_picker_row.dart';
 
 class AddChartPanelScreen extends StatefulWidget {
   const AddChartPanelScreen({super.key});
@@ -14,7 +16,7 @@ class _AddChartPanelScreenState extends State<AddChartPanelScreen> {
   final _formKey = GlobalKey<FormState>();
   final _panelNameCtrl = TextEditingController();
   final _unitCtrl = TextEditingController();
-
+  IconData _panelIcon = Icons.widgets_outlined;
   bool _disableDashboardPrefix = false;
   String _chartType = 'Pie chart';
   int _qos = 0;
@@ -106,6 +108,7 @@ class _AddChartPanelScreenState extends State<AddChartPanelScreen> {
         'items': _items.map((i) => {
           'topic': (i['topic'] as TextEditingController).text.trim(),
           'label': (i['label'] as TextEditingController).text.trim(),
+          'icon': iconToString(_panelIcon),
           'factor': (i['factor'] as TextEditingController).text.trim(),
           'decimalPrecision': (i['decimalPrecision'] as TextEditingController).text.trim(),
           'color': (i['color'] as Color).value.toString(),
@@ -297,6 +300,10 @@ class _AddChartPanelScreenState extends State<AddChartPanelScreen> {
               ),
             ),
             _d(),
+            PanelIconPickerRow(
+              selectedIcon: _panelIcon,
+              onChanged: (icon) => setState(() => _panelIcon = icon),
+            ),
 
             // Unit and Type
             Padding(

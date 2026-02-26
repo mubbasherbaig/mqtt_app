@@ -249,6 +249,12 @@ class AppLocalizations {
 
   String get addRadioButtonsPanel => get('addRadioButtonsPanel');
   String get addRadioItem         => get('addRadioItem');
+
+  String get addANewDashboard           => get('addANewDashboard');
+  String get deleteThisDashboard        => get('deleteThisDashboard');
+  String get deleteThisDashboardConfirm => get('deleteThisDashboardConfirm');
+  String get cannotDeleteLastDashboard  => get('cannotDeleteLastDashboard');
+  String get noDashboards               => get('noDashboards');
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -483,6 +489,12 @@ const Map<String, String> _en = {
 
   'addRadioButtonsPanel': 'Add a Radio Buttons panel',
   'addRadioItem': 'Add radio item',
+
+  'addANewDashboard':           'Add a new dashboard',
+  'deleteThisDashboard':        'Delete this dashboard',
+  'deleteThisDashboardConfirm': 'All panels in this dashboard will be permanently removed.',
+  'cannotDeleteLastDashboard':  'Cannot delete the last dashboard.',
+  'noDashboards':               'No dashboards yet.',
 };
 
 // ─────────────────────────────────────────────────────────────
@@ -717,4 +729,10 @@ const Map<String, String> _it = {
 
   'addRadioButtonsPanel': 'Aggiungi pannello pulsanti radio',
   'addRadioItem': 'Aggiungi elemento radio',
+
+  'addANewDashboard':           'Aggiungi una nuova dashboard',
+  'deleteThisDashboard':        'Elimina questa dashboard',
+  'deleteThisDashboardConfirm': 'Tutti i pannelli di questa dashboard verranno rimossi definitivamente.',
+  'cannotDeleteLastDashboard':  'Impossibile eliminare l\'ultima dashboard.',
+  'noDashboards':               'Nessuna dashboard.',
 };

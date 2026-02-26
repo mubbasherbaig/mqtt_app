@@ -3,30 +3,37 @@ import 'package:provider/provider.dart';
 
 import '../app_localizations.dart';
 import '../app_settings.dart';
+import '../widgets/icon_picker_sheet.dart';
+import '../widgets/panel_icon_picker_row.dart';
 
 class AddMultiStateIndicatorPanelScreen extends StatefulWidget {
   const AddMultiStateIndicatorPanelScreen({super.key});
+
   @override
-  State<AddMultiStateIndicatorPanelScreen> createState() => _AddMultiStateIndicatorPanelScreenState();
+  State<AddMultiStateIndicatorPanelScreen> createState() =>
+      _AddMultiStateIndicatorPanelScreenState();
 }
 
-class _AddMultiStateIndicatorPanelScreenState extends State<AddMultiStateIndicatorPanelScreen> {
-  final _formKey            = GlobalKey<FormState>();
-  final _panelNameCtrl      = TextEditingController();
-  final _topicCtrl          = TextEditingController();
+class _AddMultiStateIndicatorPanelScreenState
+    extends State<AddMultiStateIndicatorPanelScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _panelNameCtrl = TextEditingController();
+  final _topicCtrl = TextEditingController();
 
-  bool   _disableDashboardPrefix = false;
-  bool   _enableNotification     = false;
-  bool   _payloadIsJson          = false;
-  bool   _showReceivedTimestamp  = false;
-  bool   _showSentTimestamp      = false;
-  bool   _retain                 = false;
+  IconData _panelIcon = Icons.widgets_outlined;
 
-  String _iconSize  = 'Small';
-  int    _qos       = 0;
+  bool _disableDashboardPrefix = false;
+  bool _enableNotification = false;
+  bool _payloadIsJson = false;
+  bool _showReceivedTimestamp = false;
+  bool _showSentTimestamp = false;
+  bool _retain = false;
 
-  final List<String> _iconSizes  = ['Small', 'Medium', 'Large'];
-  final List<int>    _qosOptions = [0, 1, 2];
+  String _iconSize = 'Small';
+  int _qos = 0;
+
+  final List<String> _iconSizes = ['Small', 'Medium', 'Large'];
+  final List<int> _qosOptions = [0, 1, 2];
 
   // Each item: label, payload, iconColor
   final List<Map<String, dynamic>> _items = [];
@@ -39,24 +46,41 @@ class _AddMultiStateIndicatorPanelScreenState extends State<AddMultiStateIndicat
   }
 
   void _addItem() => _items.add({
-    'label':   TextEditingController(),
+    'label': TextEditingController(),
     'payload': TextEditingController(),
-    'color':   const Color(0xFF9E9E9E),
+    'color': const Color(0xFF9E9E9E),
   });
 
   @override
   void dispose() {
-    _panelNameCtrl.dispose(); _topicCtrl.dispose();
-    for (final i in _items) { (i['label'] as TextEditingController).dispose(); (i['payload'] as TextEditingController).dispose(); }
+    _panelNameCtrl.dispose();
+    _topicCtrl.dispose();
+    for (final i in _items) {
+      (i['label'] as TextEditingController).dispose();
+      (i['payload'] as TextEditingController).dispose();
+    }
     super.dispose();
   }
 
-  void _pickItemColor(int index, AppLocalizations l) { // Added 'l'
-    final colors = [Colors.red, Colors.green, const Color(0xFF1E88E5), Colors.orange, Colors.purple, Colors.teal, Colors.pink, const Color(0xFF9E9E9E)];
-    showDialog(context: context, builder: (_) => AlertDialog(
-      title: Text(l.pickIconColor), // Use localized title
-      content: Wrap(/* ... rest of your code ... */),
-    ));
+  void _pickItemColor(int index, AppLocalizations l) {
+    // Added 'l'
+    final colors = [
+      Colors.red,
+      Colors.green,
+      const Color(0xFF1E88E5),
+      Colors.orange,
+      Colors.purple,
+      Colors.teal,
+      Colors.pink,
+      const Color(0xFF9E9E9E),
+    ];
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text(l.pickIconColor), // Use localized title
+        content: Wrap(/* ... rest of your code ... */),
+      ),
+    );
   }
 
   void _create() {
@@ -65,12 +89,17 @@ class _AddMultiStateIndicatorPanelScreenState extends State<AddMultiStateIndicat
         'type': 'Multi-State Indicator',
         'label': _panelNameCtrl.text.trim(),
         'topic': _topicCtrl.text.trim(),
+        'icon': iconToString(_panelIcon),
         'iconSize': _iconSize,
-        'items': _items.map((i) => {
-          'label': (i['label'] as TextEditingController).text.trim(),
-          'payload': (i['payload'] as TextEditingController).text.trim(),
-          'color': (i['color'] as Color).value.toString(),
-        }).toList(),
+        'items': _items
+            .map(
+              (i) => {
+                'label': (i['label'] as TextEditingController).text.trim(),
+                'payload': (i['payload'] as TextEditingController).text.trim(),
+                'color': (i['color'] as Color).value.toString(),
+              },
+            )
+            .toList(),
         // ADD THESE MISSING FIELDS:
         'disableDashboardPrefix': _disableDashboardPrefix,
         'payloadIsJson': _payloadIsJson,
@@ -82,69 +111,208 @@ class _AddMultiStateIndicatorPanelScreenState extends State<AddMultiStateIndicat
     }
   }
 
-  Widget _divider() => const Divider(height: 1, thickness: 1, color: Color(0xFFE0E0E0));
-  Widget _helpIcon() => Container(width: 28, height: 28,
-      decoration: const BoxDecoration(color: Color(0xFF1E88E5), shape: BoxShape.circle),
-      child: const Icon(Icons.question_mark, color: Colors.white, size: 15));
+  Widget _divider() =>
+      const Divider(height: 1, thickness: 1, color: Color(0xFFE0E0E0));
 
-  Widget _fieldRow(String label, TextEditingController ctrl, {bool required = false, Widget? trailing, String? Function(String?)? validator}) {
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Padding(padding: const EdgeInsets.fromLTRB(16, 18, 16, 0), child: Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
-        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
-          RichText(text: TextSpan(text: label, style: const TextStyle(fontSize: 15, color: Colors.black87, fontWeight: FontWeight.w400),
-              children: required ? const [TextSpan(text: ' *', style: TextStyle(color: Colors.red))] : [])),
-          TextFormField(controller: ctrl, validator: validator, style: const TextStyle(fontSize: 15, color: Colors.black87),
-              decoration: const InputDecoration(isDense: true, contentPadding: EdgeInsets.only(top: 6, bottom: 8),
-                  enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.black26)),
-                  focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Color(0xFF1E88E5))),
-                  errorBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.red)),
-                  focusedErrorBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.red)))),
-        ])),
-        if (trailing != null) Padding(padding: const EdgeInsets.only(left: 10, bottom: 8), child: trailing),
-      ])),
-      _divider(),
-    ]);
+  Widget _helpIcon() => Container(
+    width: 28,
+    height: 28,
+    decoration: const BoxDecoration(
+      color: Color(0xFF1E88E5),
+      shape: BoxShape.circle,
+    ),
+    child: const Icon(Icons.question_mark, color: Colors.white, size: 15),
+  );
+
+  Widget _fieldRow(
+    String label,
+    TextEditingController ctrl, {
+    bool required = false,
+    Widget? trailing,
+    String? Function(String?)? validator,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 18, 16, 0),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    RichText(
+                      text: TextSpan(
+                        text: label,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          color: Colors.black87,
+                          fontWeight: FontWeight.w400,
+                        ),
+                        children: required
+                            ? const [
+                                TextSpan(
+                                  text: ' *',
+                                  style: TextStyle(color: Colors.red),
+                                ),
+                              ]
+                            : [],
+                      ),
+                    ),
+                    TextFormField(
+                      controller: ctrl,
+                      validator: validator,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        color: Colors.black87,
+                      ),
+                      decoration: const InputDecoration(
+                        isDense: true,
+                        contentPadding: EdgeInsets.only(top: 6, bottom: 8),
+                        enabledBorder: UnderlineInputBorder(
+                          borderSide: BorderSide(color: Colors.black26),
+                        ),
+                        focusedBorder: UnderlineInputBorder(
+                          borderSide: BorderSide(color: Color(0xFF1E88E5)),
+                        ),
+                        errorBorder: UnderlineInputBorder(
+                          borderSide: BorderSide(color: Colors.red),
+                        ),
+                        focusedErrorBorder: UnderlineInputBorder(
+                          borderSide: BorderSide(color: Colors.red),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (trailing != null)
+                Padding(
+                  padding: const EdgeInsets.only(left: 10, bottom: 8),
+                  child: trailing,
+                ),
+            ],
+          ),
+        ),
+        _divider(),
+      ],
+    );
   }
 
   Widget _itemIconRow(int index, AppLocalizations l) {
     final color = _items[index]['color'] as Color;
     final hex = '#${color.value.toRadixString(16).substring(2).toUpperCase()}';
-    return Column(children: [
-      Padding(padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12), child: Row(children: [
-        // ... (radio icon)
-        const SizedBox(width: 10),
-        Text(l.chooseIcon, style: const TextStyle(fontSize: 14, color: Colors.black87)), // Use localized text
-        const Spacer(),
-        GestureDetector(
-          onTap: () => _pickItemColor(index, l), // Pass 'l' here
-          child: Container(width: 34, height: 34, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            children: [
+              // ... (radio icon)
+              const SizedBox(width: 10),
+              Text(
+                l.chooseIcon,
+                style: const TextStyle(fontSize: 14, color: Colors.black87),
+              ),
+              // Use localized text
+              const Spacer(),
+              GestureDetector(
+                onTap: () => _pickItemColor(index, l), // Pass 'l' here
+                child: Container(
+                  width: 34,
+                  height: 34,
+                  decoration: BoxDecoration(
+                    color: color,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Icon color',
+                      style: TextStyle(fontSize: 12, color: Colors.black54),
+                    ),
+                    Container(
+                      decoration: const BoxDecoration(
+                        border: Border(
+                          bottom: BorderSide(color: Colors.black26),
+                        ),
+                      ),
+                      child: Text(
+                        hex,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Colors.black87,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
-        const SizedBox(width: 12),
-        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('Icon color', style: TextStyle(fontSize: 12, color: Colors.black54)),
-          Container(decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: Colors.black26))),
-              child: Text(hex, style: const TextStyle(fontSize: 14, color: Colors.black87))),
-        ])),
-      ])),
-      _divider(),
-    ]);
+        _divider(),
+      ],
+    );
   }
 
-  Widget _checkRow(String label, bool value, ValueChanged<bool> onChanged, {bool showHelp = false, bool enabled = true}) {
-    return Column(children: [
-      InkWell(onTap: enabled ? () => onChanged(!value) : null,
-          child: Padding(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10), child: Row(children: [
-            SizedBox(width: 28, height: 28, child: Checkbox(value: value,
-                onChanged: enabled ? (v) => onChanged(v ?? false) : null,
-                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                side: BorderSide(color: enabled ? Colors.black54 : Colors.black26, width: 1.5),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(2)))),
-            const SizedBox(width: 12),
-            Expanded(child: Text(label, style: TextStyle(fontSize: 15, color: enabled ? Colors.black87 : Colors.black38))),
-            if (showHelp) _helpIcon(),
-          ]))),
-      _divider(),
-    ]);
+  Widget _checkRow(
+    String label,
+    bool value,
+    ValueChanged<bool> onChanged, {
+    bool showHelp = false,
+    bool enabled = true,
+  }) {
+    return Column(
+      children: [
+        InkWell(
+          onTap: enabled ? () => onChanged(!value) : null,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 28,
+                  height: 28,
+                  child: Checkbox(
+                    value: value,
+                    onChanged: enabled ? (v) => onChanged(v ?? false) : null,
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    side: BorderSide(
+                      color: enabled ? Colors.black54 : Colors.black26,
+                      width: 1.5,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 15,
+                      color: enabled ? Colors.black87 : Colors.black38,
+                    ),
+                  ),
+                ),
+                if (showHelp) _helpIcon(),
+              ],
+            ),
+          ),
+        ),
+        _divider(),
+      ],
+    );
   }
 
   @override
@@ -162,82 +330,202 @@ class _AddMultiStateIndicatorPanelScreenState extends State<AddMultiStateIndicat
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        leading: IconButton(icon: const Icon(Icons.arrow_back, color: Colors.black), onPressed: () => Navigator.pop(context)),
-        title: Text(l.addMultiStateIndicator, style: const TextStyle(color: Colors.black, fontSize: 18, fontWeight: FontWeight.bold)),
-        bottom: PreferredSize(preferredSize: const Size.fromHeight(1), child: Container(color: Colors.grey.shade300, height: 1)),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(
+          l.addMultiStateIndicator,
+          style: const TextStyle(
+            color: Colors.black,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(color: Colors.grey.shade300, height: 1),
+        ),
       ),
       body: Form(
         key: _formKey,
-        child: ListView(children: [
-          _fieldRow(l.panelName, _panelNameCtrl, required: true,
-              trailing: const Icon(Icons.remove_red_eye_outlined, color: Colors.black45, size: 22),
-              validator: (v) => (v == null || v.isEmpty) ? l.required : null),
-
-          _checkRow(l.disableDashboardPrefix, _disableDashboardPrefix, (v) => setState(() => _disableDashboardPrefix = v), showHelp: true),
-
-          _fieldRow(l.topic, _topicCtrl, required: true, validator: (v) => (v == null || v.isEmpty) ? l.required : null),
-
-          // Dynamic State Items
-          ...List.generate(_items.length, (i) => Column(children: [
-            _fieldRow('${l.labelForItem} ${i + 1}', _items[i]['label'] as TextEditingController),
-            _fieldRow('${l.payloadForItem} ${i + 1}', _items[i]['payload'] as TextEditingController, required: true,
-                validator: (v) => (v == null || v.isEmpty) ? l.required : null),
-            _itemIconRow(i, l), // Passed localizations helper
-          ])),
-
-          // Add More Button
-          Column(children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                Text(l.addMoreItem, style: const TextStyle(fontSize: 15, color: Colors.black87)),
-                GestureDetector(
-                  onTap: () => setState(() => _addItem()),
-                  child: Container(width: 44, height: 44, decoration: const BoxDecoration(color: Colors.grey, shape: BoxShape.circle), child: const Icon(Icons.add, color: Colors.white, size: 26)),
-                ),
-              ]),
-            ),
-            _divider(),
-          ]),
-
-          // Icon Size
-          Column(children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-              child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                Text(l.iconSize, style: const TextStyle(fontSize: 15, color: Colors.black87)),
-                DropdownButton<String>(
-                  value: _iconSize,
-                  underline: const SizedBox(),
-                  items: sizeLabels.entries.map((e) => DropdownMenuItem(value: e.key, child: Text(e.value))).toList(),
-                  onChanged: (v) => setState(() => _iconSize = v!),
-                ),
-              ]),
-            ),
-            _divider(),
-          ]),
-
-          _checkRow(l.payloadIsJson, _payloadIsJson, (v) => setState(() => _payloadIsJson = v)),
-          _checkRow(l.showReceivedTimestamp, _showReceivedTimestamp, (v) => setState(() => _showReceivedTimestamp = v)),
-
-          // Footer Actions
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 24, 16, 36),
-            child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-              SizedBox(width: 130, height: 44, child: OutlinedButton(onPressed: () => Navigator.pop(context), child: Text(l.cancel))),
-              const SizedBox(width: 16),
-              SizedBox(
-                width: 130,
-                height: 44,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1565C0)),
-                  onPressed: _create,
-                  child: Text(l.create, style: const TextStyle(color: Colors.white)),
-                ),
+        child: ListView(
+          children: [
+            _fieldRow(
+              l.panelName,
+              _panelNameCtrl,
+              required: true,
+              trailing: const Icon(
+                Icons.remove_red_eye_outlined,
+                color: Colors.black45,
+                size: 22,
               ),
-            ]),
-          ),
-        ]),
+              validator: (v) => (v == null || v.isEmpty) ? l.required : null,
+            ),
+
+            _checkRow(
+              l.disableDashboardPrefix,
+              _disableDashboardPrefix,
+              (v) => setState(() => _disableDashboardPrefix = v),
+              showHelp: true,
+            ),
+
+            _fieldRow(
+              l.topic,
+              _topicCtrl,
+              required: true,
+              validator: (v) => (v == null || v.isEmpty) ? l.required : null,
+            ),
+            PanelIconPickerRow(
+              selectedIcon: _panelIcon,
+              onChanged: (icon) => setState(() => _panelIcon = icon),
+            ),
+            _divider(),
+            // Dynamic State Items
+            ...List.generate(
+              _items.length,
+              (i) => Column(
+                children: [
+                  _fieldRow(
+                    '${l.labelForItem} ${i + 1}',
+                    _items[i]['label'] as TextEditingController,
+                  ),
+                  _fieldRow(
+                    '${l.payloadForItem} ${i + 1}',
+                    _items[i]['payload'] as TextEditingController,
+                    required: true,
+                    validator: (v) =>
+                        (v == null || v.isEmpty) ? l.required : null,
+                  ),
+                  _itemIconRow(i, l), // Passed localizations helper
+                ],
+              ),
+            ),
+
+            // Add More Button
+            Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 14,
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        l.addMoreItem,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: () => setState(() => _addItem()),
+                        child: Container(
+                          width: 44,
+                          height: 44,
+                          decoration: const BoxDecoration(
+                            color: Colors.grey,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.add,
+                            color: Colors.white,
+                            size: 26,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                _divider(),
+              ],
+            ),
+
+            // Icon Size
+            Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 6,
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        l.iconSize,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      DropdownButton<String>(
+                        value: _iconSize,
+                        underline: const SizedBox(),
+                        items: sizeLabels.entries
+                            .map(
+                              (e) => DropdownMenuItem(
+                                value: e.key,
+                                child: Text(e.value),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (v) => setState(() => _iconSize = v!),
+                      ),
+                    ],
+                  ),
+                ),
+                _divider(),
+              ],
+            ),
+
+            _checkRow(
+              l.payloadIsJson,
+              _payloadIsJson,
+              (v) => setState(() => _payloadIsJson = v),
+            ),
+            _checkRow(
+              l.showReceivedTimestamp,
+              _showReceivedTimestamp,
+              (v) => setState(() => _showReceivedTimestamp = v),
+            ),
+
+            // Footer Actions
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 24, 16, 36),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  SizedBox(
+                    width: 130,
+                    height: 44,
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: Text(l.cancel),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  SizedBox(
+                    width: 130,
+                    height: 44,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF1565C0),
+                      ),
+                      onPressed: _create,
+                      child: Text(
+                        l.create,
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 
 import '../app_localizations.dart';
 import '../app_settings.dart';
+import '../widgets/icon_picker_sheet.dart';
+import '../widgets/panel_icon_picker_row.dart';
 
 class AddLineGraphPanelScreen extends StatefulWidget {
   const AddLineGraphPanelScreen({super.key});
@@ -17,6 +19,8 @@ class _AddLineGraphPanelScreenState extends State<AddLineGraphPanelScreen> {
   final _panelNameCtrl = TextEditingController();
   final _maxPersistenceCtrl = TextEditingController(text: '10');
   final _unitCtrl = TextEditingController();
+
+  IconData _panelIcon = Icons.widgets_outlined;
 
   bool _disableDashboardPrefix = false;
   bool _showPlotArea = false;
@@ -140,6 +144,7 @@ class _AddLineGraphPanelScreenState extends State<AddLineGraphPanelScreen> {
               (g) => {
                 'topic': (g['topic'] as TextEditingController).text.trim(),
                 'label': (g['label'] as TextEditingController).text.trim(),
+                'icon': iconToString(_panelIcon),
                 'factor': (g['factor'] as TextEditingController).text.trim(),
                 'color': (g['color'] as Color).value.toString(),
               },
@@ -490,7 +495,10 @@ class _AddLineGraphPanelScreenState extends State<AddLineGraphPanelScreen> {
               _disableDashboardPrefix,
               (v) => setState(() => _disableDashboardPrefix = v),
             ),
-
+            PanelIconPickerRow(
+              selectedIcon: _panelIcon,
+              onChanged: (icon) => setState(() => _panelIcon = icon),
+            ),
             // Localized Graph Series Blocks
             ...List.generate(_graphs.length, (i) => _graphBlock(i, l)),
 

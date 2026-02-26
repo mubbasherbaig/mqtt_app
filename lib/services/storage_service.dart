@@ -42,6 +42,49 @@ class StorageService {
     }
   }
 
+  // ── Dashboard-level operations ─────────────────────────────
+
+  /// Returns all dashboards for a connection (live list from storage).
+  static List<Map<String, dynamic>> getDashboards(int connectionIndex) {
+    final list = loadConnections();
+    if (connectionIndex < 0 || connectionIndex >= list.length) return [];
+    final conn = list[connectionIndex];
+    final dashboards = (conn['dashboards'] as List? ?? []);
+    return dashboards.map<Map<String, dynamic>>((d) => Map<String, dynamic>.from(d)).toList();
+  }
+
+  /// Adds a new dashboard to the connection and returns its index.
+  static Future<int> addDashboard(int connectionIndex, Map<String, dynamic> dashboard) async {
+    final list = loadConnections();
+    if (connectionIndex < 0 || connectionIndex >= list.length) return -1;
+    final conn = Map<String, dynamic>.from(list[connectionIndex]);
+    final dashboards = List<Map<String, dynamic>>.from(
+        (conn['dashboards'] as List? ?? []).map((d) => Map<String, dynamic>.from(d)));
+    // Ensure it has an empty panels list
+    dashboard['panels'] ??= <Map<String, dynamic>>[];
+    dashboards.add(dashboard);
+    conn['dashboards'] = dashboards;
+    list[connectionIndex] = conn;
+    await saveConnections(list);
+    return dashboards.length - 1;
+  }
+
+  /// Deletes a dashboard (and all its panels) at [dashboardIndex].
+  static Future<void> deleteDashboard(int connectionIndex, int dashboardIndex) async {
+    final list = loadConnections();
+    if (connectionIndex < 0 || connectionIndex >= list.length) return;
+    final conn = Map<String, dynamic>.from(list[connectionIndex]);
+    final dashboards = List<Map<String, dynamic>>.from(
+        (conn['dashboards'] as List? ?? []).map((d) => Map<String, dynamic>.from(d)));
+    if (dashboardIndex < 0 || dashboardIndex >= dashboards.length) return;
+    dashboards.removeAt(dashboardIndex);
+    conn['dashboards'] = dashboards;
+    list[connectionIndex] = conn;
+    await saveConnections(list);
+  }
+
+  // ── Panel-level operations ─────────────────────────────────
+
   static Future<void> addPanel(int connectionIndex, int dashboardIndex, Map<String, dynamic> panel) async {
     final list = loadConnections();
     if (connectionIndex < 0 || connectionIndex >= list.length) return;

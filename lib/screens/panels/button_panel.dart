@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../app_localizations.dart';
 import '../app_settings.dart';
+import '../widgets/icon_picker_sheet.dart';
+import '../widgets/panel_icon_picker_row.dart';
 
 class AddButtonPanelScreen extends StatefulWidget {
   const AddButtonPanelScreen({super.key});
@@ -16,7 +18,7 @@ class _AddButtonPanelScreenState extends State<AddButtonPanelScreen> {
   final _payloadController         = TextEditingController();
   final _separatePayloadController = TextEditingController();
   final _formKey                   = GlobalKey<FormState>();
-
+  IconData _panelIcon = Icons.widgets_outlined;
   bool _disableDashboardPrefix = false;
   bool _noPayload              = false;
   bool _repeatPublish          = false;
@@ -78,6 +80,7 @@ class _AddButtonPanelScreenState extends State<AddButtonPanelScreen> {
         'type':            'Button',
         'label':           _panelNameController.text.trim(),
         'topic':           _topicController.text.trim(),
+        'icon': iconToString(_panelIcon),
         'payload':         _noPayload ? '' : _payloadController.text.trim(),
         'separatePayload': _separatePayloadController.text.trim(),
         'buttonColor':     _buttonColor.value.toString(),
@@ -219,7 +222,11 @@ class _AddButtonPanelScreenState extends State<AddButtonPanelScreen> {
 
             // Separate payload on release
             _fieldRow(l.separatePayload, _separatePayloadController, showHelp: true),
-
+            PanelIconPickerRow(
+              selectedIcon: _panelIcon,
+              onChanged: (icon) => setState(() => _panelIcon = icon),
+            ),
+            _divider(),
             // Button color picker
             Column(
               children: [

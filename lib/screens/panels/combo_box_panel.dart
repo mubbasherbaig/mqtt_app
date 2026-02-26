@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 
 import '../app_localizations.dart';
 import '../app_settings.dart';
+import '../widgets/icon_picker_sheet.dart';
+import '../widgets/panel_icon_picker_row.dart';
 
 class AddComboBoxPanelScreen extends StatefulWidget {
   const AddComboBoxPanelScreen({super.key});
@@ -15,7 +17,7 @@ class _AddComboBoxPanelScreenState extends State<AddComboBoxPanelScreen> {
   final _panelNameCtrl         = TextEditingController();
   final _topicCtrl             = TextEditingController();
   final _subscribeTopicCtrl    = TextEditingController();
-
+  IconData _panelIcon = Icons.widgets_outlined;
   bool _disableDashboardPrefix  = false;
   bool _useIconForOption        = false;
   bool _enableNotification      = false;
@@ -55,7 +57,9 @@ class _AddComboBoxPanelScreenState extends State<AddComboBoxPanelScreen> {
     if (_formKey.currentState!.validate()) {
       Navigator.pop(context, {
         'type': 'Combo Box', 'label': _panelNameCtrl.text.trim(),
-        'topic': _topicCtrl.text.trim(), 'subscribeTopic': _subscribeTopicCtrl.text.trim(),
+        'topic': _topicCtrl.text.trim(),
+        'icon': iconToString(_panelIcon),
+        'subscribeTopic': _subscribeTopicCtrl.text.trim(),
         'items': _items.map((i) => {'label': i['label']!.text.trim(), 'payload': i['payload']!.text.trim()}).toList(),
         'retain': _retain, 'qos': _qos,
       });
@@ -124,7 +128,11 @@ class _AddComboBoxPanelScreenState extends State<AddComboBoxPanelScreen> {
             _fieldRow(l.topic, _topicCtrl, required: true, validator: (v) => (v == null || v.isEmpty) ? l.required : null),
             _fieldRow(l.subscribeTopic, _subscribeTopicCtrl, showHelp: true),
             _checkRow(l.useIconForOption, _useIconForOption, (v) => setState(() => _useIconForOption = v)),
-
+            PanelIconPickerRow(
+              selectedIcon: _panelIcon,
+              onChanged: (icon) => setState(() => _panelIcon = icon),
+            ),
+            _divider(),
             // Dynamic items
             ...List.generate(_items.length, (i) => Column(children: [
               _fieldRow('${l.labelForItem} ${i + 1}', _items[i]['label']!, required: true, validator: (v) => (v == null || v.isEmpty) ? l.required : null),
