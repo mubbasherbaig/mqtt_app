@@ -1,32 +1,20 @@
 // lib/screens/widgets/icon_picker_sheet.dart
-//
-// A reusable bottom sheet that lets users pick from a categorised list
-// of Material icons. Returns an IconData (or null if dismissed).
-//
-// Usage:
-//   final icon = await showIconPicker(context);
-//   if (icon != null) setState(() => _selectedIcon = icon);
-//
-// Serialization helpers are also provided so icons can be stored
-// as plain strings in SharedPreferences / JSON:
-//   iconToString(icon)   → e.g. "0xe318"
-//   iconFromString(s)    → IconData
 
 import 'package:flutter/material.dart';
 
 // ── Serialization ─────────────────────────────────────────────
+// We store icons by their codePoint hex string (e.g. "0xe318").
+// iconFromString does a LOOKUP in _kAllIcons map — never constructs
+// IconData dynamically — so tree-shaking works in release builds.
 
 String iconToString(IconData icon) =>
     '0x${icon.codePoint.toRadixString(16)}';
 
 IconData iconFromString(String? s) {
   if (s == null || s.isEmpty) return Icons.dashboard_outlined;
-  try {
-    final cp = int.parse(s);
-    return IconData(cp, fontFamily: 'MaterialIcons');
-  } catch (_) {
-    return Icons.dashboard_outlined;
-  }
+  // Try exact hex lookup first (e.g. "0xe318" or "e318")
+  final normalized = s.startsWith('0x') ? s : '0x$s';
+  return _kAllIcons[normalized] ?? Icons.dashboard_outlined;
 }
 
 // ── Icon catalogue ────────────────────────────────────────────
@@ -81,8 +69,6 @@ const List<_IconCategory> _kIconCategories = [
     _IconEntry('Lock', Icons.lock_outline),
     _IconEntry('Unlock', Icons.lock_open_outlined),
     _IconEntry('Security', Icons.security_outlined),
-    // _IconEntry('Motion', Icons.motion_sensor_active_outlined),
-    // _IconEntry('Smoke', Icons.detector_smoke_outlined),
     _IconEntry('Battery', Icons.battery_charging_full),
     _IconEntry('Solar', Icons.solar_power_outlined),
     _IconEntry('Electric', Icons.electric_bolt),
@@ -178,10 +164,17 @@ const List<_IconCategory> _kIconCategories = [
   ]),
 ];
 
+// ── Flat lookup map: "0x{hex}" → IconData ─────────────────────
+// Built from _kIconCategories so it's always in sync.
+// iconFromString uses this instead of constructing IconData at runtime.
+final Map<String, IconData> _kAllIcons = {
+  for (final cat in _kIconCategories)
+    for (final e in cat.icons)
+      '0x${e.icon.codePoint.toRadixString(16)}': e.icon,
+};
+
 // ── Public API ────────────────────────────────────────────────
 
-/// Shows the icon picker bottom sheet. Returns the selected [IconData]
-/// or null if the user dismisses without selecting.
 Future<IconData?> showIconPicker(BuildContext context,
     {IconData? current}) async {
   return showModalBottomSheet<IconData>(
@@ -232,7 +225,6 @@ class _IconPickerSheetState extends State<_IconPickerSheet> {
       height: screenH * 0.82,
       child: Column(
         children: [
-          // ── Handle ──
           const SizedBox(height: 10),
           Center(
             child: Container(
@@ -244,7 +236,6 @@ class _IconPickerSheetState extends State<_IconPickerSheet> {
             ),
           ),
           const SizedBox(height: 12),
-          // ── Title ──
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 16),
             child: Align(
@@ -257,7 +248,6 @@ class _IconPickerSheetState extends State<_IconPickerSheet> {
             ),
           ),
           const SizedBox(height: 12),
-          // ── Search ──
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: TextField(
@@ -287,10 +277,9 @@ class _IconPickerSheetState extends State<_IconPickerSheet> {
             ),
           ),
           const SizedBox(height: 8),
-          // ── Grid ──
           Expanded(
             child: _search.isNotEmpty
-                ? _buildGrid(_filtered, showLabel: true)
+                ? _buildGrid(_filtered)
                 : ListView.builder(
               padding: const EdgeInsets.only(bottom: 24),
               itemCount: _kIconCategories.length,
@@ -300,7 +289,8 @@ class _IconPickerSheetState extends State<_IconPickerSheet> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                      padding:
+                      const EdgeInsets.fromLTRB(16, 16, 16, 8),
                       child: Text(cat.name,
                           style: const TextStyle(
                               fontSize: 13,
@@ -308,7 +298,7 @@ class _IconPickerSheetState extends State<_IconPickerSheet> {
                               color: Colors.black45,
                               letterSpacing: 0.5)),
                     ),
-                    _buildGrid(cat.icons, showLabel: true),
+                    _buildGrid(cat.icons),
                   ],
                 );
               },
@@ -319,7 +309,7 @@ class _IconPickerSheetState extends State<_IconPickerSheet> {
     );
   }
 
-  Widget _buildGrid(List<_IconEntry> entries, {required bool showLabel}) {
+  Widget _buildGrid(List<_IconEntry> entries) {
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -333,7 +323,8 @@ class _IconPickerSheetState extends State<_IconPickerSheet> {
       itemCount: entries.length,
       itemBuilder: (_, i) {
         final entry = entries[i];
-        final isSelected = widget.current?.codePoint == entry.icon.codePoint;
+        final isSelected =
+            widget.current?.codePoint == entry.icon.codePoint;
         return GestureDetector(
           onTap: () => Navigator.pop(context, entry.icon),
           child: AnimatedContainer(

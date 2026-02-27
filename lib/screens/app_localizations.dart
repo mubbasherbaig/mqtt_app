@@ -255,6 +255,10 @@ class AppLocalizations {
   String get deleteThisDashboardConfirm => get('deleteThisDashboardConfirm');
   String get cannotDeleteLastDashboard  => get('cannotDeleteLastDashboard');
   String get noDashboards               => get('noDashboards');
+
+  String get appearance        => get('appearance');
+  String get behavior          => get('behavior');
+  String get dashboardSettings => get('dashboardSettings');
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -495,6 +499,10 @@ const Map<String, String> _en = {
   'deleteThisDashboardConfirm': 'All panels in this dashboard will be permanently removed.',
   'cannotDeleteLastDashboard':  'Cannot delete the last dashboard.',
   'noDashboards':               'No dashboards yet.',
+
+  'appearance':        'Appearance',
+  'behavior':          'Behavior',
+  'dashboardSettings': 'Dashboard',
 };
 
 // ─────────────────────────────────────────────────────────────
@@ -735,4 +743,8 @@ const Map<String, String> _it = {
   'deleteThisDashboardConfirm': 'Tutti i pannelli di questa dashboard verranno rimossi definitivamente.',
   'cannotDeleteLastDashboard':  'Impossibile eliminare l\'ultima dashboard.',
   'noDashboards':               'Nessuna dashboard.',
+
+  'appearance':        'Aspetto',
+  'behavior':          'Comportamento',
+  'dashboardSettings': 'Dashboard',
 };
