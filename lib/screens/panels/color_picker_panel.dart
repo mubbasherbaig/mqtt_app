@@ -6,8 +6,8 @@ import '../widgets/icon_picker_sheet.dart';
 import '../widgets/panel_icon_picker_row.dart';
 
 class AddColorPickerPanelScreen extends StatefulWidget {
-  const AddColorPickerPanelScreen({super.key});
-
+  const AddColorPickerPanelScreen({super.key, this.initialData});
+  final Map<String, dynamic>? initialData;
   @override
   State<AddColorPickerPanelScreen> createState() =>
       _AddColorPickerPanelScreenState();
@@ -28,6 +28,28 @@ class _AddColorPickerPanelScreenState extends State<AddColorPickerPanelScreen> {
   bool _retain = false;
   int _qos = 0;
   final List<int> _qosOptions = [0, 1, 2];
+  bool get _isEditing => widget.initialData != null;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialData != null) {
+      final d = widget.initialData!;
+      _panelNameCtrl.text = d['label'] as String? ?? d['panelName'] as String? ?? '';
+      _topicCtrl.text = d['topic'] as String? ?? '';
+      _subscribeTopicCtrl.text = d['subscribeTopic'] as String? ?? '';
+      _disableDashboardPrefix = d['disableDashboardPrefix'] == true;
+      _addAlpha = d['addAlpha'] == true;
+      _hideColorValue = d['hideColorValue'] == true;
+      _payloadIsJson = d['payloadIsJson'] == true;
+      _showReceivedTimestamp = d['showReceivedTimestamp'] == true;
+      _showSentTimestamp = d['showSentTimestamp'] == true;
+      _retain = d['retain'] == true;
+      _qos = int.tryParse(d['qos']?.toString() ?? '0') ?? 0;
+      final iconStr = d['icon'] as String?;
+      if (iconStr != null) _panelIcon = iconFromString(iconStr) ?? Icons.widgets_outlined;
+    }
+  }
 
   @override
   void dispose() {
@@ -212,7 +234,7 @@ class _AddColorPickerPanelScreenState extends State<AddColorPickerPanelScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          l.addColorPickerPanel,
+          _isEditing ? l.edit : l.addColorPickerPanel,
           style: const TextStyle(
             color: Colors.black,
             fontSize: 18,
@@ -373,7 +395,7 @@ class _AddColorPickerPanelScreenState extends State<AddColorPickerPanelScreen> {
                       ),
                       onPressed: _create,
                       child: Text(
-                        l.create,
+                        _isEditing ? l.save : l.create,
                         style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.w600,

@@ -7,8 +7,8 @@ import '../widgets/icon_picker_sheet.dart';
 import '../widgets/panel_icon_picker_row.dart';
 
 class AddLedIndicatorPanelScreen extends StatefulWidget {
-  const AddLedIndicatorPanelScreen({super.key});
-
+  const AddLedIndicatorPanelScreen({super.key, this.initialData});
+  final Map<String, dynamic>? initialData;
   @override
   State<AddLedIndicatorPanelScreen> createState() =>
       _AddLedIndicatorPanelScreenState();
@@ -21,6 +21,7 @@ class _AddLedIndicatorPanelScreenState
   final _topicCtrl = TextEditingController();
   final _payloadOnCtrl = TextEditingController();
   final _payloadOffCtrl = TextEditingController();
+  bool get _isEditing => widget.initialData != null;
 
   IconData _panelIcon = Icons.widgets_outlined;
 
@@ -35,6 +36,29 @@ class _AddLedIndicatorPanelScreenState
 
   final List<String> _iconSizes = ['Small', 'Medium', 'Large'];
   final List<int> _qosOptions = [0, 1, 2];
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialData != null) {
+      final d = widget.initialData!;
+      _panelNameCtrl.text = d['label'] as String? ?? d['panelName'] as String? ?? '';
+      _topicCtrl.text = d['topic'] as String? ?? '';
+      _payloadOnCtrl.text = d['payloadOn'] as String? ?? '';
+      _payloadOffCtrl.text = d['payloadOff'] as String? ?? '';
+      _disableDashboardPrefix = d['disableDashboardPrefix'] == true;
+      _payloadIsJson = d['payloadIsJson'] == true;
+      _showReceivedTimestamp = d['showReceivedTimestamp'] == true;
+      _iconSize = d['iconSize'] as String? ?? 'Small';
+      _qos = int.tryParse(d['qos']?.toString() ?? '0') ?? 0;
+      final onColorVal = int.tryParse(d['onIconColor']?.toString() ?? '');
+      if (onColorVal != null) _onIconColor = Color(onColorVal);
+      final offColorVal = int.tryParse(d['offIconColor']?.toString() ?? '');
+      if (offColorVal != null) _offIconColor = Color(offColorVal);
+      final iconStr = d['icon'] as String?;
+      if (iconStr != null) _panelIcon = iconFromString(iconStr) ?? Icons.widgets_outlined;
+    }
+  }
 
   @override
   void dispose() {
@@ -110,6 +134,9 @@ class _AddLedIndicatorPanelScreenState
         'offIconColor': _offIconColor.value.toString(),
         'iconSize': _iconSize,
         'qos': _qos,
+        'disableDashboardPrefix': _disableDashboardPrefix,
+        'payloadIsJson': _payloadIsJson,
+        'showReceivedTimestamp': _showReceivedTimestamp,
       });
     }
   }
@@ -276,7 +303,7 @@ class _AddLedIndicatorPanelScreenState
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          l.addLedIndicatorPanel,
+          _isEditing ? l.edit : l.addLedIndicatorPanel,
           style: const TextStyle(
             color: Colors.black,
             fontSize: 18,
@@ -457,7 +484,7 @@ class _AddLedIndicatorPanelScreenState
                       ),
                       onPressed: _create,
                       child: Text(
-                        l.create,
+                        _isEditing ? l.save : l.create,
                         style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.w600,

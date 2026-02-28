@@ -7,8 +7,8 @@ import '../widgets/icon_picker_sheet.dart';
 import '../widgets/panel_icon_picker_row.dart';
 
 class AddDateTimePickerPanelScreen extends StatefulWidget {
-  const AddDateTimePickerPanelScreen({super.key});
-
+  const AddDateTimePickerPanelScreen({super.key, this.initialData});
+  final Map<String, dynamic>? initialData;
   @override
   State<AddDateTimePickerPanelScreen> createState() =>
       _AddDateTimePickerPanelScreenState();
@@ -19,6 +19,8 @@ class _AddDateTimePickerPanelScreenState
   final _formKey = GlobalKey<FormState>();
   final _panelNameCtrl = TextEditingController();
   final _topicCtrl = TextEditingController();
+
+  final _subscribeTopicCtrl = TextEditingController();
   IconData _panelIcon = Icons.widgets_outlined;
   bool _disableDashboardPrefix = false;
   bool _payloadIsJson = false;
@@ -29,14 +31,39 @@ class _AddDateTimePickerPanelScreenState
   String _buttonSize = 'Medium';
   int _qos = 0;
 
+  bool get _isEditing => widget.initialData != null;
+
   final List<String> _pickerTypes = ['Date Time', 'Date', 'Time'];
   final List<String> _buttonSizes = ['Small', 'Medium', 'Large'];
   final List<int> _qosOptions = [0, 1, 2];
 
   @override
+  void initState() {
+    super.initState();
+    if (widget.initialData != null) {
+      final d = widget.initialData!;
+      _panelNameCtrl.text = d['label'] as String? ?? d['panelName'] as String? ?? '';
+      _topicCtrl.text = d['topic'] as String? ?? '';
+      _disableDashboardPrefix = d['disableDashboardPrefix'] == true;
+      _payloadIsJson = d['payloadIsJson'] == true;
+      _showSentTimestamp = d['showSentTimestamp'] == true;
+      _retain = d['retain'] == true;
+      _pickerType = d['pickerType'] as String? ?? 'Date Time';
+      _buttonSize = d['buttonSize'] as String? ?? 'Medium';
+      _qos = int.tryParse(d['qos']?.toString() ?? '0') ?? 0;
+      final colorVal = int.tryParse(d['buttonColor']?.toString() ?? '');
+      if (colorVal != null) _buttonColor = Color(colorVal);
+      final iconStr = d['icon'] as String?;
+      if (iconStr != null) _panelIcon = iconFromString(iconStr) ?? Icons.widgets_outlined;
+      _subscribeTopicCtrl.text = d['subscribeTopic'] as String? ?? '';
+    }
+  }
+
+  @override
   void dispose() {
     _panelNameCtrl.dispose();
     _topicCtrl.dispose();
+    _subscribeTopicCtrl.dispose();
     super.dispose();
   }
 
@@ -99,6 +126,10 @@ class _AddDateTimePickerPanelScreenState
         'buttonSize': _buttonSize,
         'retain': _retain,
         'qos': _qos,
+        'disableDashboardPrefix': _disableDashboardPrefix,
+        'payloadIsJson': _payloadIsJson,
+        'showSentTimestamp': _showSentTimestamp,
+        'subscribeTopic': _subscribeTopicCtrl.text.trim(),
       });
     }
   }
@@ -251,7 +282,7 @@ class _AddDateTimePickerPanelScreenState
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          l.addDateTimePickerPanel,
+          _isEditing ? l.edit : l.addDateTimePickerPanel,
           style: const TextStyle(
             color: Colors.black,
             fontSize: 18,
@@ -285,6 +316,8 @@ class _AddDateTimePickerPanelScreenState
               req: true,
               val: (v) => (v == null || v.isEmpty) ? l.required : null,
             ),
+            _field(l.subscribeTopic, _subscribeTopicCtrl),
+
             PanelIconPickerRow(
               selectedIcon: _panelIcon,
               onChanged: (icon) => setState(() => _panelIcon = icon),
@@ -536,7 +569,7 @@ class _AddDateTimePickerPanelScreenState
                       ),
                       onPressed: _create,
                       child: Text(
-                        l.create,
+                        _isEditing ? l.save : l.create,
                         style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.w600,

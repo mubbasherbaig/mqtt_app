@@ -6,8 +6,8 @@ import '../widgets/icon_picker_sheet.dart';
 import '../widgets/panel_icon_picker_row.dart';
 
 class AddTextOutputPanelScreen extends StatefulWidget {
-  const AddTextOutputPanelScreen({super.key});
-
+  const AddTextOutputPanelScreen({super.key, this.initialData});
+  final Map<String, dynamic>? initialData;
   @override
   State<AddTextOutputPanelScreen> createState() =>
       _AddTextOutputPanelScreenState();
@@ -20,6 +20,7 @@ class _AddTextOutputPanelScreenState extends State<AddTextOutputPanelScreen> {
   final _factorCtrl = TextEditingController(text: '1');
   final _decimalPrecisionCtrl = TextEditingController();
   final _unitCtrl = TextEditingController();
+  bool get _isEditing => widget.initialData != null;
 
   IconData _panelIcon = Icons.widgets_outlined;
 
@@ -42,7 +43,26 @@ class _AddTextOutputPanelScreenState extends State<AddTextOutputPanelScreen> {
     _unitCtrl.dispose();
     super.dispose();
   }
-
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialData != null) {
+      final d = widget.initialData!;
+      _panelNameCtrl.text = d['label'] as String? ?? d['panelName'] as String? ?? '';
+      _topicCtrl.text = d['topic'] as String? ?? '';
+      _factorCtrl.text = d['factor']?.toString() ?? '1';
+      _decimalPrecisionCtrl.text = d['decimalPrecision']?.toString() ?? '';
+      _unitCtrl.text = d['unit'] as String? ?? '';
+      _disableDashboardPrefix = d['disableDashboardPrefix'] == true;
+      _showHistory = d['showHistory'] == true;
+      _payloadIsJson = d['payloadIsJson'] == true;
+      _showReceivedTimestamp = d['showReceivedTimestamp'] == true;
+      _textSize = d['textSize'] as String? ?? 'Medium';
+      _qos = int.tryParse(d['qos']?.toString() ?? '0') ?? 0;
+      final iconStr = d['icon'] as String?;
+      if (iconStr != null) _panelIcon = iconFromString(iconStr) ?? Icons.widgets_outlined;
+    }
+  }
   void _create() {
     if (_formKey.currentState!.validate()) {
       Navigator.pop(context, {
@@ -214,7 +234,7 @@ class _AddTextOutputPanelScreenState extends State<AddTextOutputPanelScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          l.addTextOutputPanel,
+          _isEditing ? l.edit : l.addTextOutputPanel,
           style: const TextStyle(
             color: Colors.black,
             fontSize: 20,
@@ -397,7 +417,7 @@ class _AddTextOutputPanelScreenState extends State<AddTextOutputPanelScreen> {
                       ),
                       onPressed: _create,
                       child: Text(
-                        l.create,
+                        _isEditing ? l.save : l.create,
                         style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.w600,

@@ -7,8 +7,8 @@ import '../widgets/icon_picker_sheet.dart';
 import '../widgets/panel_icon_picker_row.dart';
 
 class AddLayoutDecoratorPanelScreen extends StatefulWidget {
-  const AddLayoutDecoratorPanelScreen({super.key});
-
+  const AddLayoutDecoratorPanelScreen({super.key, this.initialData});
+  final Map<String, dynamic>? initialData;
   @override
   State<AddLayoutDecoratorPanelScreen> createState() =>
       _AddLayoutDecoratorPanelScreenState();
@@ -21,6 +21,7 @@ class _AddLayoutDecoratorPanelScreenState
   IconData _panelIcon = Icons.widgets_outlined;
   String _titleAlignment = 'Center';
   String _textSize = '20px';
+  bool get _isEditing => widget.initialData != null;
 
   final List<String> _alignments = ['Left', 'Center', 'Right'];
   final List<String> _textSizes = [
@@ -33,6 +34,19 @@ class _AddLayoutDecoratorPanelScreenState
     '28px',
     '32px',
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialData != null) {
+      final d = widget.initialData!;
+      _panelNameCtrl.text = d['label'] as String? ?? d['panelName'] as String? ?? '';
+      _titleAlignment = d['titleAlignment'] as String? ?? 'Center';
+      _textSize = d['textSize'] as String? ?? '20px';
+      final iconStr = d['icon'] as String?;
+      if (iconStr != null) _panelIcon = iconFromString(iconStr) ?? Icons.widgets_outlined;
+    }
+  }
 
   @override
   void dispose() {
@@ -75,7 +89,7 @@ class _AddLayoutDecoratorPanelScreenState
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          l.addLayoutDecoratorPanel,
+          _isEditing ? l.edit : l.addLayoutDecoratorPanel,
           style: const TextStyle(
             color: Colors.black,
             fontSize: 18,
@@ -277,7 +291,7 @@ class _AddLayoutDecoratorPanelScreenState
                       ),
                       onPressed: _create,
                       child: Text(
-                        l.create,
+                        _isEditing ? l.save : l.create,
                         style: const TextStyle(color: Colors.white),
                       ),
                     ),

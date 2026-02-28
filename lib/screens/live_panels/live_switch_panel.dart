@@ -27,6 +27,27 @@ class _LiveSwitchPanelState extends State<LiveSwitchPanel> {
   String get _payloadOff => widget.panel['payloadOff'] as String? ?? 'OFF';
   bool get _retain => widget.panel['retain'] == true;
 
+  bool get _useIconSwitch => widget.panel['useIconSwitch'] == true;
+  Color get _onIconColor {
+    final v = int.tryParse(widget.panel['onIconColor']?.toString() ?? '');
+    return v != null ? Color(v) : const Color(0xFFC00000);
+  }
+  Color get _offIconColor {
+    final v = int.tryParse(widget.panel['offIconColor']?.toString() ?? '');
+    return v != null ? Color(v) : const Color(0xFF005C00);
+  }
+  double get _iconSize {
+    switch (widget.panel['iconSize'] as String? ?? 'Small') {
+      case 'Large': return 48;
+      case 'Medium': return 36;
+      default: return 24;
+    }
+  }
+  String get _subTopic {
+    final sub = widget.panel['subscribeTopic'] as String? ?? '';
+    return sub.isNotEmpty ? sub : widget.topic;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -34,7 +55,7 @@ class _LiveSwitchPanelState extends State<LiveSwitchPanel> {
   }
 
   void _subscribe() {
-    _unsub = widget.mqtt.subscribe(widget.topic, (payload) {
+    _unsub = widget.mqtt.subscribe(_subTopic, (payload) {
       if (!mounted) return;
       setState(() => _isOn = payload == _payloadOn);
     });
@@ -43,7 +64,8 @@ class _LiveSwitchPanelState extends State<LiveSwitchPanel> {
   @override
   void didUpdateWidget(LiveSwitchPanel old) {
     super.didUpdateWidget(old);
-    if (old.topic != widget.topic) {
+    if (old.panel['subscribeTopic'] != widget.panel['subscribeTopic'] ||
+        old.topic != widget.topic) {
       _unsub?.call();
       _subscribe();
     }
@@ -66,6 +88,33 @@ class _LiveSwitchPanelState extends State<LiveSwitchPanel> {
   @override
   Widget build(BuildContext context) {
     final isConnected = widget.mqtt.isConnected;
+
+    if (_useIconSwitch) {
+      final color = _isOn ? _onIconColor : _offIconColor;
+      return Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          GestureDetector(
+            onTap: isConnected ? () => _toggle(!_isOn) : null,
+            child: Icon(
+              _isOn ? Icons.lightbulb : Icons.lightbulb_outline,
+              color: isConnected ? color : Colors.grey,
+              size: _iconSize,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            _isOn ? _payloadOn : _payloadOff,
+            style: TextStyle(
+              fontSize: 13,
+              color: isConnected ? color : Colors.black45,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      );
+    }
+
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [

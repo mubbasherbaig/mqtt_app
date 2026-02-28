@@ -6,8 +6,8 @@ import '../widgets/icon_picker_sheet.dart';
 import '../widgets/panel_icon_picker_row.dart';
 
 class AddBarGraphPanelScreen extends StatefulWidget {
-  const AddBarGraphPanelScreen({super.key});
-
+  const AddBarGraphPanelScreen({super.key, this.initialData});
+  final Map<String, dynamic>? initialData;
   @override
   State<AddBarGraphPanelScreen> createState() => _AddBarGraphPanelScreenState();
 }
@@ -18,6 +18,7 @@ class _AddBarGraphPanelScreenState extends State<AddBarGraphPanelScreen> {
   final _unitCtrl = TextEditingController();
   IconData _panelIcon = Icons.widgets_outlined;
 
+  bool get _isEditing => widget.initialData != null;
 
   bool _disableDashboardPrefix = false;
   bool _defineRange = false;
@@ -39,7 +40,34 @@ class _AddBarGraphPanelScreenState extends State<AddBarGraphPanelScreen> {
   @override
   void initState() {
     super.initState();
-    _addBar();
+    if (widget.initialData != null) {
+      final d = widget.initialData!;
+      _panelNameCtrl.text = d['label'] as String? ?? d['panelName'] as String? ?? '';
+      _unitCtrl.text = d['unit'] as String? ?? '';
+      _disableDashboardPrefix = d['disableDashboardPrefix'] == true;
+      _defineRange = d['defineRange'] == true;
+      _orientation = d['orientation'] as String? ?? 'Vertical';
+      _qos = int.tryParse(d['qos']?.toString() ?? '0') ?? 0;
+      final iconStr = d['icon'] as String?;
+      if (iconStr != null) _panelIcon = iconFromString(iconStr) ?? Icons.widgets_outlined;
+      // Restore bars
+      final savedBars = d['bars'];
+      if (savedBars is List && savedBars.isNotEmpty) {
+        _bars.clear();
+        for (final b in savedBars) {
+          final colorVal = int.tryParse(b['color']?.toString() ?? '');
+          _bars.add({
+            'topic': TextEditingController(text: b['topic']?.toString() ?? ''),
+            'label': TextEditingController(text: b['label']?.toString() ?? ''),
+            'factor': TextEditingController(text: b['factor']?.toString() ?? '1'),
+            'decimalPrecision': TextEditingController(text: b['decimalPrecision']?.toString() ?? ''),
+            'color': colorVal != null ? Color(colorVal) : _defaultColors[_bars.length % _defaultColors.length],
+            'enableNotif': b['enableNotif'] == true,
+            'payloadIsJson': b['payloadIsJson'] == true,
+          });
+        }
+      }
+    }
   }
 
   void _addBar() {
@@ -458,7 +486,7 @@ class _AddBarGraphPanelScreenState extends State<AddBarGraphPanelScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          l.addBarGraphPanel,
+          _isEditing ? l.edit : l.addBarGraphPanel,
           style: const TextStyle(
             color: Colors.black,
             fontSize: 20,
@@ -717,7 +745,7 @@ class _AddBarGraphPanelScreenState extends State<AddBarGraphPanelScreen> {
                       ),
                       onPressed: _create,
                       child: Text(
-                        l.create,
+                        _isEditing ? l.save : l.create,
                         style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.w600,

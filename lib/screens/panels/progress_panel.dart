@@ -7,8 +7,8 @@ import '../widgets/icon_picker_sheet.dart';
 import '../widgets/panel_icon_picker_row.dart';
 
 class AddProgressPanelScreen extends StatefulWidget {
-  const AddProgressPanelScreen({super.key});
-
+  const AddProgressPanelScreen({super.key, this.initialData});
+  final Map<String, dynamic>? initialData;
   @override
   State<AddProgressPanelScreen> createState() => _AddProgressPanelScreenState();
 }
@@ -22,6 +22,7 @@ class _AddProgressPanelScreenState extends State<AddProgressPanelScreen> {
   final _factorCtrl = TextEditingController(text: '1');
   final _decimalPrecisionCtrl = TextEditingController();
   final _unitCtrl = TextEditingController();
+  bool get _isEditing => widget.initialData != null;
 
   IconData _panelIcon = Icons.widgets_outlined;
 
@@ -37,6 +38,31 @@ class _AddProgressPanelScreenState extends State<AddProgressPanelScreen> {
 
   final List<String> _progressTypes = ['Horizontal', 'Vertical', 'Circular'];
   final List<int> _qosOptions = [0, 1, 2];
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialData != null) {
+      final d = widget.initialData!;
+      _panelNameCtrl.text = d['label'] as String? ?? d['panelName'] as String? ?? '';
+      _topicCtrl.text = d['topic'] as String? ?? '';
+      _payloadMinCtrl.text = d['payloadMin']?.toString() ?? '';
+      _payloadMaxCtrl.text = d['payloadMax']?.toString() ?? '';
+      _factorCtrl.text = d['factor']?.toString() ?? '1';
+      _decimalPrecisionCtrl.text = d['decimalPrecision']?.toString() ?? '';
+      _unitCtrl.text = d['unit'] as String? ?? '';
+      _disableDashboardPrefix = d['disableDashboardPrefix'] == true;
+      _dynamicColor = d['dynamicColor'] == true;
+      _payloadIsJson = d['payloadIsJson'] == true;
+      _showReceivedTimestamp = d['showReceivedTimestamp'] == true;
+      _progressType = d['progressType'] as String? ?? 'Horizontal';
+      _qos = int.tryParse(d['qos']?.toString() ?? '0') ?? 0;
+      final colorVal = int.tryParse(d['color']?.toString() ?? '');
+      if (colorVal != null) _color = Color(colorVal);
+      final iconStr = d['icon'] as String?;
+      if (iconStr != null) _panelIcon = iconFromString(iconStr) ?? Icons.widgets_outlined;
+    }
+  }
 
   @override
   void dispose() {
@@ -390,7 +416,7 @@ class _AddProgressPanelScreenState extends State<AddProgressPanelScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          l.addProgressPanel,
+          _isEditing ? l.edit : l.addProgressPanel,
           style: const TextStyle(
             color: Colors.black,
             fontSize: 18,
@@ -601,7 +627,7 @@ class _AddProgressPanelScreenState extends State<AddProgressPanelScreen> {
                       ),
                       onPressed: _create,
                       child: Text(
-                        l.create,
+                        _isEditing ? l.save : l.create,
                         style: const TextStyle(color: Colors.white),
                       ),
                     ),

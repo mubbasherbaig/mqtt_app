@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:mqtt_app/screens/panels/barcode_scannner_panel.dart';
+import 'package:mqtt_app/screens/panels/date_time_picker.dart';
 import 'package:provider/provider.dart';
 import '../services/mqtt_service.dart';
 import 'app_localizations.dart';
@@ -31,6 +33,26 @@ import 'live_panels/live_image_panel.dart';
 import 'live_panels/live_barcode_scanner_panel.dart';
 import 'live_panels/live_uri_launcher_panel.dart';
 import 'live_panels/live_layout_decorator_panel.dart';
+
+import 'panels/button_panel.dart';
+import 'panels/switch_panel.dart';
+import 'panels/slider_panel.dart';
+import 'panels/text_input_panel.dart';
+import 'panels/text_output_panel.dart';
+import 'panels/node_status_panel.dart';
+import 'panels/led_indicator_panel.dart';
+import 'panels/multi_state_indicator_panel.dart';
+import 'panels/combo_box_panel.dart';
+import 'panels/radio_buttons_panel.dart';
+import 'panels/progress_panel.dart';
+import 'panels/gauge_panel.dart';
+import 'panels/line_graph_panel.dart';
+import 'panels/bar_graph_panel.dart';
+import 'panels/chart_panel.dart';
+import 'panels/color_picker_panel.dart';
+import 'panels/image_panel.dart';
+import 'panels/uri_launcher_panel.dart';
+import 'panels/layout_decorator_panel.dart';
 
 // ─────────────────────────────────────────────────────────────
 // DashboardScreen
@@ -658,6 +680,126 @@ class _DashboardTabBodyState extends State<_DashboardTabBody> {
     _loadPanels();
   }
 
+  Future<void> _showDeleteConfirmation(int index) async {
+    final settings = context.read<AppSettings>();
+    final l = AppLocalizations.of(settings.languageCode);
+    final panelName =
+        _panels[index]['panelName'] as String? ??
+        _panels[index]['label'] as String? ??
+        _panels[index]['type'] as String? ??
+        'Panel';
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text(l.delete),
+        content: Text('Delete "$panelName"? This cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(l.cancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(l.delete, style: const TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      await _deletePanel(index);
+    }
+  }
+
+  Future<void> _editPanel(int index) async {
+    final panel = _panels[index];
+    final type = panel['type'] as String? ?? '';
+
+    Widget? screen;
+    switch (type) {
+      case 'Button':
+        screen = AddButtonPanelScreen(initialData: panel);
+        break;
+      case 'Switch':
+        screen = AddSwitchPanelScreen(initialData: panel);
+        break;
+      case 'Slider':
+        screen = AddSliderPanelScreen(initialData: panel);
+        break;
+      case 'Text Input':
+        screen = AddTextInputPanelScreen(initialData: panel);
+        break;
+      case 'Text Output':
+        screen = AddTextOutputPanelScreen(initialData: panel);
+        break;
+      case 'Node Status':
+        screen = AddNodeStatusPanelScreen(initialData: panel);
+        break;
+      case 'LED Indicator':
+        screen = AddLedIndicatorPanelScreen(initialData: panel);
+        break;
+      case 'Multi-State Indicator':
+        screen = AddMultiStateIndicatorPanelScreen(initialData: panel);
+        break;
+      case 'Combo Box':
+        screen = AddComboBoxPanelScreen(initialData: panel);
+        break;
+      case 'Radio Buttons':
+        screen = AddRadioButtonsPanelScreen(initialData: panel);
+        break;
+      case 'Progress':
+        screen = AddProgressPanelScreen(initialData: panel);
+        break;
+      case 'Gauge':
+        screen = AddGaugePanelScreen(initialData: panel);
+        break;
+      case 'Line Graph':
+        screen = AddLineGraphPanelScreen(initialData: panel);
+        break;
+      case 'Bar Graph':
+        screen = AddBarGraphPanelScreen(initialData: panel);
+        break;
+      case 'Chart':
+        screen = AddChartPanelScreen(initialData: panel);
+        break;
+      case 'Color Picker':
+        screen = AddColorPickerPanelScreen(initialData: panel);
+        break;
+      case 'Date & Time Picker':
+        screen = AddDateTimePickerPanelScreen(initialData: panel);
+        break;
+      case 'Image':
+        screen = AddImagePanelScreen(initialData: panel);
+        break;
+      case 'Barcode Scanner':
+        screen = AddBarcodeScannerPanelScreen(initialData: panel);
+        break;
+      case 'URI Launcher':
+        screen = AddUriLauncherPanelScreen(initialData: panel);
+        break;
+      case 'Layout Decorator':
+        screen = AddLayoutDecoratorPanelScreen(initialData: panel);
+        break;
+      default:
+        return;
+    }
+
+    final result = await Navigator.push<Map<String, dynamic>>(
+      context,
+      MaterialPageRoute(builder: (_) => screen!),
+    );
+
+    if (result != null) {
+      await StorageService.updatePanel(
+        widget.connectionIndex,
+        widget.dashboardIndex,
+        index,
+        result,
+      );
+      _loadPanels();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final multiMqtt = context.watch<MultiMqttService>();
@@ -705,7 +847,8 @@ class _DashboardTabBodyState extends State<_DashboardTabBody> {
           multiMqtt: multiMqtt,
           connHost: widget.connHost,
           connPort: widget.connPort,
-          onDelete: () => _deletePanel(index),
+          onDelete: () => _showDeleteConfirmation(index),
+          onEdit: () => _editPanel(index),
         );
       },
     );
@@ -723,6 +866,7 @@ class _PanelCard extends StatelessWidget {
   final String connHost;
   final int connPort;
   final VoidCallback onDelete;
+  final VoidCallback onEdit;
 
   const _PanelCard({
     required this.panel,
@@ -731,6 +875,7 @@ class _PanelCard extends StatelessWidget {
     required this.connHost,
     required this.connPort,
     required this.onDelete,
+    required this.onEdit,
   });
 
   String _effectiveTopic(String raw) {
@@ -741,6 +886,8 @@ class _PanelCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final settings = context.read<AppSettings>();
+    final l = AppLocalizations.of(settings.languageCode);
     final type = panel['type'] as String? ?? '';
     final name =
         panel['panelName'] as String? ?? panel['label'] as String? ?? type;
@@ -771,12 +918,58 @@ class _PanelCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                GestureDetector(
-                  onTap: onDelete,
-                  child: const Icon(
-                    Icons.close,
-                    size: 16,
-                    color: Colors.black38,
+                // ── THREE-DOT MENU replaces X button ──────────
+                SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: PopupMenuButton<String>(
+                    padding: EdgeInsets.zero,
+                    iconSize: 16,
+                    icon: const Icon(
+                      Icons.more_vert,
+                      size: 16,
+                      color: Colors.black38,
+                    ),
+                    onSelected: (value) {
+                      if (value == 'edit') {
+                        onEdit();
+                      } else if (value == 'delete') {
+                        onDelete();
+                      }
+                    },
+                    itemBuilder: (_) => [
+                      PopupMenuItem(
+                        value: 'edit',
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.edit_outlined,
+                              size: 18,
+                              color: Colors.black54,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(l.edit),
+                          ],
+                        ),
+                      ),
+                      PopupMenuItem(
+                        value: 'delete',
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.delete_outline,
+                              size: 18,
+                              color: Colors.red,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              l.delete,
+                              style: const TextStyle(color: Colors.red),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],

@@ -7,8 +7,8 @@ import '../widgets/icon_picker_sheet.dart';
 import '../widgets/panel_icon_picker_row.dart';
 
 class AddUriLauncherPanelScreen extends StatefulWidget {
-  const AddUriLauncherPanelScreen({super.key});
-
+  const AddUriLauncherPanelScreen({super.key, this.initialData});
+  final Map<String, dynamic>? initialData;
   @override
   State<AddUriLauncherPanelScreen> createState() =>
       _AddUriLauncherPanelScreenState();
@@ -18,6 +18,9 @@ class _AddUriLauncherPanelScreenState extends State<AddUriLauncherPanelScreen> {
   final _formKey = GlobalKey<FormState>();
   final _panelNameCtrl = TextEditingController();
   final _topicCtrl = TextEditingController();
+  final _subscribeTopicCtrl = TextEditingController();
+
+  bool get _isEditing => widget.initialData != null;
 
   IconData _panelIcon = Icons.widgets_outlined;
 
@@ -31,9 +34,29 @@ class _AddUriLauncherPanelScreenState extends State<AddUriLauncherPanelScreen> {
   final List<int> _qosOptions = [0, 1, 2];
 
   @override
+  void initState() {
+    super.initState();
+    if (widget.initialData != null) {
+      final d = widget.initialData!;
+      _panelNameCtrl.text = d['label'] as String? ?? d['panelName'] as String? ?? '';
+      _topicCtrl.text = d['topic'] as String? ?? '';
+      _disableDashboardPrefix = d['disableDashboardPrefix'] == true;
+      _staticUrl = d['staticUrl'] == true;
+      _enableNotification = d['enableNotification'] == true;
+      _payloadIsJson = d['payloadIsJson'] == true;
+      _showReceivedTimestamp = d['showReceivedTimestamp'] == true;
+      _qos = int.tryParse(d['qos']?.toString() ?? '0') ?? 0;
+      final iconStr = d['icon'] as String?;
+      if (iconStr != null) _panelIcon = iconFromString(iconStr) ?? Icons.widgets_outlined;
+      _subscribeTopicCtrl.text = d['subscribeTopic'] as String? ?? '';
+    }
+  }
+
+  @override
   void dispose() {
     _panelNameCtrl.dispose();
     _topicCtrl.dispose();
+    _subscribeTopicCtrl.dispose();
     super.dispose();
   }
 
@@ -49,6 +72,7 @@ class _AddUriLauncherPanelScreenState extends State<AddUriLauncherPanelScreen> {
         'disableDashboardPrefix': _disableDashboardPrefix,
         'payloadIsJson': _payloadIsJson,
         'showReceivedTimestamp': _showReceivedTimestamp,
+        'subscribeTopic': _subscribeTopicCtrl.text.trim(),
       });
     }
   }
@@ -207,7 +231,7 @@ class _AddUriLauncherPanelScreenState extends State<AddUriLauncherPanelScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          l.addUriLauncherPanel,
+          _isEditing ? l.edit : l.addUriLauncherPanel,
           style: const TextStyle(
             color: Colors.black,
             fontSize: 18,
@@ -241,6 +265,8 @@ class _AddUriLauncherPanelScreenState extends State<AddUriLauncherPanelScreen> {
               req: true,
               val: (v) => (v == null || v.isEmpty) ? l.required : null,
             ),
+            _field(l.subscribeTopic, _subscribeTopicCtrl, showHelp: true),
+
             PanelIconPickerRow(
               selectedIcon: _panelIcon,
               onChanged: (icon) => setState(() => _panelIcon = icon),
@@ -321,7 +347,7 @@ class _AddUriLauncherPanelScreenState extends State<AddUriLauncherPanelScreen> {
                       ),
                       onPressed: _create,
                       child: Text(
-                        l.create,
+                        _isEditing ? l.save : l.create,
                         style: const TextStyle(color: Colors.white),
                       ),
                     ),

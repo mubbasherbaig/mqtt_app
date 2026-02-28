@@ -6,8 +6,9 @@ import '../widgets/icon_picker_sheet.dart';
 import '../widgets/panel_icon_picker_row.dart';
 
 class AddSwitchPanelScreen extends StatefulWidget {
-  const AddSwitchPanelScreen({super.key});
+  const AddSwitchPanelScreen({super.key, this.initialData});
 
+  final Map<String, dynamic>? initialData;
   @override
   State<AddSwitchPanelScreen> createState() => _AddSwitchPanelScreenState();
 }
@@ -20,6 +21,8 @@ class _AddSwitchPanelScreenState extends State<AddSwitchPanelScreen> {
   final _payloadOnController = TextEditingController(text: '1');
   final _payloadOffController = TextEditingController(text: '0');
 
+  bool get _isEditing => widget.initialData != null;
+
   IconData _panelIcon = Icons.widgets_outlined;
 
   bool _disableDashboardPrefix = false;
@@ -30,6 +33,47 @@ class _AddSwitchPanelScreenState extends State<AddSwitchPanelScreen> {
   Color _switchColor = const Color(0xFF1E88E5);
   int _qos = 0;
   final List<int> _qosOptions = [0, 1, 2];
+
+  bool _useIconSwitch = false;
+  IconData _onIcon = Icons.lightbulb;
+  IconData _offIcon = Icons.lightbulb_outline;
+  Color _onIconColor = const Color(0xFFC00000);
+  Color _offIconColor = const Color(0xFF005C00);
+  String _iconSize = 'Small';
+  final List<String> _iconSizes = ['Small', 'Medium', 'Large'];
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialData != null) {
+      final d = widget.initialData!;
+      _panelNameController.text = d['label'] as String? ?? d['panelName'] as String? ?? '';
+      _topicController.text = d['topic'] as String? ?? '';
+      _subscribeTopicController.text = d['subscribeTopic'] as String? ?? '';
+      _payloadOnController.text = d['payloadOn'] as String? ?? '1';
+      _payloadOffController.text = d['payloadOff'] as String? ?? '0';
+      _disableDashboardPrefix = d['disableDashboardPrefix'] == true;
+      _payloadIsJson = d['payloadIsJson'] == true;
+      _showReceivedTimestamp = d['showReceivedTimestamp'] == true;
+      _showSentTimestamp = d['showSentTimestamp'] == true;
+      _retain = d['retain'] == true;
+      _useIconSwitch = d['useIconSwitch'] == true;
+      _iconSize = d['iconSize'] as String? ?? 'Small';
+      _qos = int.tryParse(d['qos']?.toString() ?? '0') ?? 0;
+      final colorVal = int.tryParse(d['switchColor']?.toString() ?? '');
+      if (colorVal != null) _switchColor = Color(colorVal);
+      final onColorVal = int.tryParse(d['onIconColor']?.toString() ?? '');
+      if (onColorVal != null) _onIconColor = Color(onColorVal);
+      final offColorVal = int.tryParse(d['offIconColor']?.toString() ?? '');
+      if (offColorVal != null) _offIconColor = Color(offColorVal);
+      final iconStr = d['icon'] as String?;
+      if (iconStr != null) _panelIcon = iconFromString(iconStr) ?? Icons.widgets_outlined;
+      final onIconStr = d['onIcon'] as String?;
+      if (onIconStr != null) _onIcon = iconFromString(onIconStr) ?? Icons.lightbulb;
+      final offIconStr = d['offIcon'] as String?;
+      if (offIconStr != null) _offIcon = iconFromString(offIconStr) ?? Icons.lightbulb_outline;
+    }
+  }
 
   @override
   void dispose() {
@@ -88,6 +132,39 @@ class _AddSwitchPanelScreenState extends State<AddSwitchPanelScreen> {
     );
   }
 
+  void _pickIconColor(bool isOn, AppLocalizations l) {
+    final colors = [
+      const Color(0xFFC00000), const Color(0xFF005C00),
+      const Color(0xFF1E88E5), Colors.orange, Colors.purple,
+      Colors.teal, Colors.pink, const Color(0xFF9E9E9E),
+    ];
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text(isOn ? l.onIcon : l.offIcon),
+        content: Wrap(
+          spacing: 10, runSpacing: 10,
+          children: colors.map((c) => GestureDetector(
+            onTap: () {
+              setState(() => isOn ? _onIconColor = c : _offIconColor = c);
+              Navigator.pop(context);
+            },
+            child: Container(
+              width: 40, height: 40,
+              decoration: BoxDecoration(
+                color: c, shape: BoxShape.circle,
+                border: Border.all(
+                  color: (isOn ? _onIconColor : _offIconColor) == c ? Colors.black : Colors.transparent,
+                  width: 3,
+                ),
+              ),
+            ),
+          )).toList(),
+        ),
+      ),
+    );
+  }
+
   void _create() {
     if (_formKey.currentState!.validate()) {
       Navigator.pop(context, {
@@ -101,11 +178,16 @@ class _AddSwitchPanelScreenState extends State<AddSwitchPanelScreen> {
         'switchColor': _switchColor.value.toString(),
         'retain': _retain,
         'qos': _qos,
-        // ADD THESE MISSING FIELDS:
         'disableDashboardPrefix': _disableDashboardPrefix,
         'payloadIsJson': _payloadIsJson,
         'showReceivedTimestamp': _showReceivedTimestamp,
         'showSentTimestamp': _showSentTimestamp,
+        'useIconSwitch': _useIconSwitch,
+        'onIcon': iconToString(_onIcon),
+        'offIcon': iconToString(_offIcon),
+        'onIconColor': _onIconColor.value.toString(),
+        'offIconColor': _offIconColor.value.toString(),
+        'iconSize': _iconSize,
       });
     }
   }
@@ -268,7 +350,7 @@ class _AddSwitchPanelScreenState extends State<AddSwitchPanelScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          l.addSwitchPanel,
+          _isEditing ? l.edit : l.addSwitchPanel,
           style: const TextStyle(
             color: Colors.black,
             fontSize: 20,
@@ -371,6 +453,80 @@ class _AddSwitchPanelScreenState extends State<AddSwitchPanelScreen> {
                 _divider(),
               ],
             ),
+            // Use Icon Switch checkbox
+            _checkRow(
+              l.useIconSwitch,
+              _useIconSwitch,
+                  (v) => setState(() => _useIconSwitch = v),
+            ),
+
+            if (_useIconSwitch) ...[
+              // On Icon row
+              Column(children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  child: Row(children: [
+                    Icon(Icons.sensors, color: _onIconColor, size: 28),
+                    const SizedBox(width: 12),
+                    Expanded(child: Text(l.onIcon, style: const TextStyle(fontSize: 15, color: Colors.black87))),
+                    GestureDetector(
+                      onTap: () => _pickIconColor(true, l),
+                      child: Container(width: 34, height: 34, decoration: BoxDecoration(color: _onIconColor, shape: BoxShape.circle)),
+                    ),
+                    const SizedBox(width: 12),
+                    Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text(l.iconColor, style: const TextStyle(fontSize: 12, color: Colors.black54)),
+                      Text('#${_onIconColor.value.toRadixString(16).substring(2).toUpperCase()}',
+                          style: const TextStyle(fontSize: 14, color: Colors.black87)),
+                    ]),
+                  ]),
+                ),
+                _divider(),
+              ]),
+              // Off Icon row
+              Column(children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  child: Row(children: [
+                    Icon(Icons.sensors, color: _offIconColor, size: 28),
+                    const SizedBox(width: 12),
+                    Expanded(child: Text(l.offIcon, style: const TextStyle(fontSize: 15, color: Colors.black87))),
+                    GestureDetector(
+                      onTap: () => _pickIconColor(false, l),
+                      child: Container(width: 34, height: 34, decoration: BoxDecoration(color: _offIconColor, shape: BoxShape.circle)),
+                    ),
+                    const SizedBox(width: 12),
+                    Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text(l.iconColor, style: const TextStyle(fontSize: 12, color: Colors.black54)),
+                      Text('#${_offIconColor.value.toRadixString(16).substring(2).toUpperCase()}',
+                          style: const TextStyle(fontSize: 14, color: Colors.black87)),
+                    ]),
+                  ]),
+                ),
+                _divider(),
+              ]),
+              // Icon size
+              Column(children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(l.iconSize, style: const TextStyle(fontSize: 15, color: Colors.black87)),
+                      DropdownButton<String>(
+                        value: _iconSize,
+                        underline: const SizedBox(),
+                        style: const TextStyle(fontSize: 15, color: Colors.black87),
+                        icon: const Icon(Icons.arrow_drop_down, color: Colors.black54),
+                        items: _iconSizes.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
+                        onChanged: (v) => setState(() => _iconSize = v!),
+                      ),
+                    ],
+                  ),
+                ),
+                _divider(),
+              ]),
+            ],
             _checkRow(
               l.payloadIsJson,
               _payloadIsJson,
@@ -496,7 +652,7 @@ class _AddSwitchPanelScreenState extends State<AddSwitchPanelScreen> {
                       ),
                       onPressed: _create,
                       child: Text(
-                        l.create,
+                        _isEditing ? l.save : l.create,
                         style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.w600,

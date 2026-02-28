@@ -6,8 +6,8 @@ import '../widgets/icon_picker_sheet.dart';
 import '../widgets/panel_icon_picker_row.dart';
 
 class AddButtonPanelScreen extends StatefulWidget {
-  const AddButtonPanelScreen({super.key});
-
+  const AddButtonPanelScreen({super.key, this.initialData});
+  final Map<String, dynamic>? initialData;
   @override
   State<AddButtonPanelScreen> createState() => _AddButtonPanelScreenState();
 }
@@ -17,8 +17,12 @@ class _AddButtonPanelScreenState extends State<AddButtonPanelScreen> {
   final _topicController           = TextEditingController();
   final _payloadController         = TextEditingController();
   final _separatePayloadController = TextEditingController();
+
+  final _subscribeTopicCtrl = TextEditingController();
   final _formKey                   = GlobalKey<FormState>();
   IconData _panelIcon = Icons.widgets_outlined;
+  bool get _isEditing => widget.initialData != null;
+
   bool _disableDashboardPrefix = false;
   bool _noPayload              = false;
   bool _repeatPublish          = false;
@@ -37,11 +41,40 @@ class _AddButtonPanelScreenState extends State<AddButtonPanelScreen> {
   final List<int>    _qosOptions  = [0, 1, 2];
 
   @override
+  void initState() {
+    super.initState();
+    if (widget.initialData != null) {
+      final d = widget.initialData!;
+      _panelNameController.text = d['label'] as String? ?? d['panelName'] as String? ?? '';
+      _topicController.text = d['topic'] as String? ?? '';
+      _payloadController.text = d['payload'] as String? ?? '';
+      _separatePayloadController.text = d['separatePayload'] as String? ?? '';
+      _disableDashboardPrefix = d['disableDashboardPrefix'] == true;
+      _noPayload = d['noPayload'] == true;
+      _repeatPublish = d['repeatPublish'] == true;
+      _fitToPanelWidth = d['fitToPanelWidth'] == true;
+      _useIconsForButton = d['useIconsForButton'] == true;
+      _payloadIsJson = d['payloadIsJson'] == true;
+      _showSentTimestamp = d['showSentTimestamp'] == true;
+      _confirmBeforePublish = d['confirmBeforePublish'] == true;
+      _retain = d['retain'] == true;
+      _buttonSize = d['buttonSize'] as String? ?? 'Medium';
+      _qos = int.tryParse(d['qos']?.toString() ?? '0') ?? 0;
+      final colorVal = int.tryParse(d['buttonColor']?.toString() ?? '');
+      if (colorVal != null) _buttonColor = Color(colorVal);
+      final iconStr = d['icon'] as String?;
+      if (iconStr != null) _panelIcon = iconFromString(iconStr) ?? Icons.widgets_outlined;
+      _subscribeTopicCtrl.text = d['subscribeTopic'] as String? ?? '';
+    }
+  }
+
+  @override
   void dispose() {
     _panelNameController.dispose();
     _topicController.dispose();
     _payloadController.dispose();
     _separatePayloadController.dispose();
+    _subscribeTopicCtrl.dispose();
     super.dispose();
   }
 
@@ -88,6 +121,14 @@ class _AddButtonPanelScreenState extends State<AddButtonPanelScreen> {
         'noPayload':       _noPayload,
         'retain':          _retain,
         'qos':             _qos,
+        'disableDashboardPrefix': _disableDashboardPrefix,
+        'repeatPublish': _repeatPublish,
+        'fitToPanelWidth': _fitToPanelWidth,
+        'useIconsForButton': _useIconsForButton,
+        'payloadIsJson': _payloadIsJson,
+        'showSentTimestamp': _showSentTimestamp,
+        'confirmBeforePublish': _confirmBeforePublish,
+        'subscribeTopic': _subscribeTopicCtrl.text.trim(),
       });
     }
   }
@@ -200,7 +241,7 @@ class _AddButtonPanelScreenState extends State<AddButtonPanelScreen> {
           icon: const Icon(Icons.arrow_back, color: Colors.black),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text(l.addButtonPanel,
+        title: Text(_isEditing ? l.edit : l.addButtonPanel,
           style: const TextStyle(color: Colors.black, fontSize: 20, fontWeight: FontWeight.w600),
         ),
         bottom: PreferredSize(
@@ -215,6 +256,7 @@ class _AddButtonPanelScreenState extends State<AddButtonPanelScreen> {
             _fieldRow(l.panelName, _panelNameController, required: true, validator: (v) => (v == null || v.isEmpty) ? l.required : null),
             _checkRow(l.disableDashboardPrefix, _disableDashboardPrefix, (v) => setState(() => _disableDashboardPrefix = v), showHelp: true),
             _fieldRow(l.topic, _topicController, required: true, validator: (v) => (v == null || v.isEmpty) ? l.required : null),
+            _fieldRow(l.subscribeTopic, _subscribeTopicCtrl, showHelp: true),
             _checkRow(l.noPayload, _noPayload, (v) => setState(() => _noPayload = v), showHelp: true),
 
             if (!_noPayload)
@@ -347,7 +389,7 @@ class _AddButtonPanelScreenState extends State<AddButtonPanelScreen> {
                         elevation: 2,
                       ),
                       onPressed: _create,
-                      child: Text(l.create, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14, letterSpacing: 0.8)),
+                      child: Text(_isEditing ? l.save : l.create, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14, letterSpacing: 0.8)),
                     ),
                   ),
                 ],

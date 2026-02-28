@@ -7,8 +7,8 @@ import '../widgets/icon_picker_sheet.dart';
 import '../widgets/panel_icon_picker_row.dart';
 
 class AddImagePanelScreen extends StatefulWidget {
-  const AddImagePanelScreen({super.key});
-
+  const AddImagePanelScreen({super.key, this.initialData});
+  final Map<String, dynamic>? initialData;
   @override
   State<AddImagePanelScreen> createState() => _AddImagePanelScreenState();
 }
@@ -26,6 +26,7 @@ class _AddImagePanelScreenState extends State<AddImagePanelScreen> {
   bool _showReceivedTimestamp = false;
   String _imageSource = 'URL Payload';
   int _qos = 0;
+  bool get _isEditing => widget.initialData != null;
 
   final List<String> _imageSources = [
     'URL Payload',
@@ -33,6 +34,25 @@ class _AddImagePanelScreenState extends State<AddImagePanelScreen> {
     'Binary Payload',
   ];
   final List<int> _qosOptions = [0, 1, 2];
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialData != null) {
+      final d = widget.initialData!;
+      _panelNameCtrl.text = d['label'] as String? ?? d['panelName'] as String? ?? '';
+      _topicCtrl.text = d['topic'] as String? ?? '';
+      _disableDashboardPrefix = d['disableDashboardPrefix'] == true;
+      _autoRefresh = d['autoRefresh'] == true;
+      _fitToPanelWidth = d['fitToPanelWidth'] != false; // default true
+      _payloadIsJson = d['payloadIsJson'] == true;
+      _showReceivedTimestamp = d['showReceivedTimestamp'] == true;
+      _imageSource = d['imageSource'] as String? ?? 'URL Payload';
+      _qos = int.tryParse(d['qos']?.toString() ?? '0') ?? 0;
+      final iconStr = d['icon'] as String?;
+      if (iconStr != null) _panelIcon = iconFromString(iconStr) ?? Icons.widgets_outlined;
+    }
+  }
 
   @override
   void dispose() {
@@ -52,6 +72,9 @@ class _AddImagePanelScreenState extends State<AddImagePanelScreen> {
         'autoRefresh': _autoRefresh,
         'fitToPanelWidth': _fitToPanelWidth,
         'qos': _qos,
+        'disableDashboardPrefix': _disableDashboardPrefix,
+        'payloadIsJson': _payloadIsJson,
+        'showReceivedTimestamp': _showReceivedTimestamp,
       });
     }
   }
@@ -217,7 +240,7 @@ class _AddImagePanelScreenState extends State<AddImagePanelScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          l.addImagePanel,
+          _isEditing ? l.edit : l.addImagePanel,
           style: const TextStyle(
             color: Colors.black,
             fontSize: 18,
@@ -388,7 +411,7 @@ class _AddImagePanelScreenState extends State<AddImagePanelScreen> {
                       ),
                       onPressed: _create,
                       child: Text(
-                        l.create,
+                        _isEditing ? l.save : l.create,
                         style: const TextStyle(color: Colors.white),
                       ),
                     ),

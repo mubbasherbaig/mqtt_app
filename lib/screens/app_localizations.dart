@@ -259,6 +259,8 @@ class AppLocalizations {
   String get appearance        => get('appearance');
   String get behavior          => get('behavior');
   String get dashboardSettings => get('dashboardSettings');
+
+  String get useIconSwitch => get('useIconSwitch');
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -503,6 +505,8 @@ const Map<String, String> _en = {
   'appearance':        'Appearance',
   'behavior':          'Behavior',
   'dashboardSettings': 'Dashboard',
+
+  'useIconSwitch': 'Use icon switch',
 };
 
 // ─────────────────────────────────────────────────────────────
@@ -747,4 +751,6 @@ const Map<String, String> _it = {
   'appearance':        'Aspetto',
   'behavior':          'Comportamento',
   'dashboardSettings': 'Dashboard',
+
+  'useIconSwitch': 'Usa icona interruttore',
 };

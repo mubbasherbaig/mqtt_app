@@ -7,7 +7,8 @@ import '../widgets/icon_picker_sheet.dart';
 import '../widgets/panel_icon_picker_row.dart';
 
 class AddRadioButtonsPanelScreen extends StatefulWidget {
-  const AddRadioButtonsPanelScreen({super.key});
+  const AddRadioButtonsPanelScreen({super.key, this.initialData});
+  final Map<String, dynamic>? initialData;
 
   @override
   State<AddRadioButtonsPanelScreen> createState() =>
@@ -20,6 +21,8 @@ class _AddRadioButtonsPanelScreenState
   final _panelNameCtrl = TextEditingController();
   final _topicCtrl = TextEditingController();
   final _subscribeTopicCtrl = TextEditingController();
+
+  bool get _isEditing => widget.initialData != null;
 
   IconData _panelIcon = Icons.widgets_outlined;
 
@@ -37,8 +40,51 @@ class _AddRadioButtonsPanelScreenState
   @override
   void initState() {
     super.initState();
-    _addItem();
-    _addItem();
+
+    if (widget.initialData != null) {
+      // ── EDIT MODE: restore everything from saved data ──────────
+      final d = widget.initialData!;
+
+      _panelNameCtrl.text =
+          d['label'] as String? ?? d['panelName'] as String? ?? '';
+      _topicCtrl.text = d['topic'] as String? ?? '';
+      _subscribeTopicCtrl.text = d['subscribeTopic'] as String? ?? '';
+
+      _disableDashboardPrefix = d['disableDashboardPrefix'] == true;
+      _payloadIsJson = d['payloadIsJson'] == true;
+      _showReceivedTimestamp = d['showReceivedTimestamp'] == true;
+      _showSentTimestamp = d['showSentTimestamp'] == true;
+      _retain = d['retain'] == true;
+      _qos = int.tryParse(d['qos']?.toString() ?? '0') ?? 0;
+
+      final iconStr = d['icon'] as String?;
+      if (iconStr != null) {
+        _panelIcon = iconFromString(iconStr) ?? Icons.widgets_outlined;
+      }
+
+      // Restore items list from saved data
+      final savedItems = d['items'];
+      if (savedItems is List && savedItems.isNotEmpty) {
+        for (final item in savedItems) {
+          _items.add({
+            'label': TextEditingController(
+              text: item['label']?.toString() ?? '',
+            ),
+            'payload': TextEditingController(
+              text: item['payload']?.toString() ?? '',
+            ),
+          });
+        }
+      } else {
+        // Fallback: at least 2 blank items if saved data had none
+        _addItem();
+        _addItem();
+      }
+    } else {
+      // ── CREATE MODE: start with 2 blank items ──────────────────
+      _addItem();
+      _addItem();
+    }
   }
 
   void _addItem() => _items.add({
@@ -69,12 +115,11 @@ class _AddRadioButtonsPanelScreenState
         'items': _items
             .map(
               (i) => {
-                'label': i['label']!.text.trim(),
-                'payload': i['payload']!.text.trim(),
-              },
-            )
+            'label': i['label']!.text.trim(),
+            'payload': i['payload']!.text.trim(),
+          },
+        )
             .toList(),
-        // Fixed: Ensure all settings are passed back
         'disableDashboardPrefix': _disableDashboardPrefix,
         'payloadIsJson': _payloadIsJson,
         'showReceivedTimestamp': _showReceivedTimestamp,
@@ -99,12 +144,12 @@ class _AddRadioButtonsPanelScreenState
   );
 
   Widget _fieldRow(
-    String label,
-    TextEditingController ctrl, {
-    bool required = false,
-    bool showHelp = false,
-    String? Function(String?)? validator,
-  }) {
+      String label,
+      TextEditingController ctrl, {
+        bool required = false,
+        bool showHelp = false,
+        String? Function(String?)? validator,
+      }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -128,11 +173,11 @@ class _AddRadioButtonsPanelScreenState
                         ),
                         children: required
                             ? const [
-                                TextSpan(
-                                  text: ' *',
-                                  style: TextStyle(color: Colors.red),
-                                ),
-                              ]
+                          TextSpan(
+                            text: ' *',
+                            style: TextStyle(color: Colors.red),
+                          ),
+                        ]
                             : [],
                       ),
                     ),
@@ -177,12 +222,12 @@ class _AddRadioButtonsPanelScreenState
   }
 
   Widget _checkRow(
-    String label,
-    bool value,
-    ValueChanged<bool> onChanged, {
-    bool showHelp = false,
-    bool enabled = true,
-  }) {
+      String label,
+      bool value,
+      ValueChanged<bool> onChanged, {
+        bool showHelp = false,
+        bool enabled = true,
+      }) {
     return Column(
       children: [
         InkWell(
@@ -241,7 +286,8 @@ class _AddRadioButtonsPanelScreenState
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          l.addRadioButtonsPanel,
+          // ── Shows "Edit" when editing, panel title when creating ──
+          _isEditing ? l.edit : l.addRadioButtonsPanel,
           style: const TextStyle(
             color: Colors.black,
             fontSize: 18,
@@ -266,7 +312,7 @@ class _AddRadioButtonsPanelScreenState
             _checkRow(
               l.disableDashboardPrefix,
               _disableDashboardPrefix,
-              (v) => setState(() => _disableDashboardPrefix = v),
+                  (v) => setState(() => _disableDashboardPrefix = v),
               showHelp: true,
             ),
             _fieldRow(
@@ -284,21 +330,21 @@ class _AddRadioButtonsPanelScreenState
             // Dynamic Items
             ...List.generate(
               _items.length,
-              (i) => Column(
+                  (i) => Column(
                 children: [
                   _fieldRow(
                     '${l.labelForItem} ${i + 1}',
                     _items[i]['label']!,
                     required: true,
                     validator: (v) =>
-                        (v == null || v.isEmpty) ? l.required : null,
+                    (v == null || v.isEmpty) ? l.required : null,
                   ),
                   _fieldRow(
                     '${l.payloadForItem} ${i + 1}',
                     _items[i]['payload']!,
                     required: true,
                     validator: (v) =>
-                        (v == null || v.isEmpty) ? l.required : null,
+                    (v == null || v.isEmpty) ? l.required : null,
                   ),
                 ],
               ),
@@ -348,17 +394,17 @@ class _AddRadioButtonsPanelScreenState
             _checkRow(
               l.payloadIsJson,
               _payloadIsJson,
-              (v) => setState(() => _payloadIsJson = v),
+                  (v) => setState(() => _payloadIsJson = v),
             ),
             _checkRow(
               l.showReceivedTimestamp,
               _showReceivedTimestamp,
-              (v) => setState(() => _showReceivedTimestamp = v),
+                  (v) => setState(() => _showReceivedTimestamp = v),
             ),
             _checkRow(
               l.showSentTimestamp,
               _showSentTimestamp,
-              (v) => setState(() => _showSentTimestamp = v),
+                  (v) => setState(() => _showSentTimestamp = v),
             ),
 
             // Retain and QoS row
@@ -383,9 +429,11 @@ class _AddRadioButtonsPanelScreenState
                         value: _qos,
                         items: _qosOptions
                             .map(
-                              (q) =>
-                                  DropdownMenuItem(value: q, child: Text('$q')),
-                            )
+                              (q) => DropdownMenuItem(
+                            value: q,
+                            child: Text('$q'),
+                          ),
+                        )
                             .toList(),
                         onChanged: (v) => setState(() => _qos = v!),
                       ),
@@ -396,7 +444,7 @@ class _AddRadioButtonsPanelScreenState
               ],
             ),
 
-            // Create/Cancel buttons...
+            // Create / Save buttons
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 24, 16, 36),
               child: Row(
@@ -420,7 +468,8 @@ class _AddRadioButtonsPanelScreenState
                       ),
                       onPressed: _create,
                       child: Text(
-                        l.create,
+                        // ── "SAVE" when editing, "CREATE" when adding ──
+                        _isEditing ? l.save : l.create,
                         style: const TextStyle(color: Colors.white),
                       ),
                     ),

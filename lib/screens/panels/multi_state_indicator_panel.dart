@@ -7,8 +7,8 @@ import '../widgets/icon_picker_sheet.dart';
 import '../widgets/panel_icon_picker_row.dart';
 
 class AddMultiStateIndicatorPanelScreen extends StatefulWidget {
-  const AddMultiStateIndicatorPanelScreen({super.key});
-
+  const AddMultiStateIndicatorPanelScreen({super.key, this.initialData});
+  final Map<String, dynamic>? initialData;
   @override
   State<AddMultiStateIndicatorPanelScreen> createState() =>
       _AddMultiStateIndicatorPanelScreenState();
@@ -21,6 +21,7 @@ class _AddMultiStateIndicatorPanelScreenState
   final _topicCtrl = TextEditingController();
 
   IconData _panelIcon = Icons.widgets_outlined;
+  bool get _isEditing => widget.initialData != null;
 
   bool _disableDashboardPrefix = false;
   bool _enableNotification = false;
@@ -41,8 +42,38 @@ class _AddMultiStateIndicatorPanelScreenState
   @override
   void initState() {
     super.initState();
-    _addItem();
-    _addItem();
+    if (widget.initialData != null) {
+      final d = widget.initialData!;
+      _panelNameCtrl.text = d['label'] as String? ?? d['panelName'] as String? ?? '';
+      _topicCtrl.text = d['topic'] as String? ?? '';
+      _disableDashboardPrefix = d['disableDashboardPrefix'] == true;
+      _payloadIsJson = d['payloadIsJson'] == true;
+      _showReceivedTimestamp = d['showReceivedTimestamp'] == true;
+      _showSentTimestamp = d['showSentTimestamp'] == true;
+      _retain = d['retain'] == true;
+      _iconSize = d['iconSize'] as String? ?? 'Small';
+      _qos = int.tryParse(d['qos']?.toString() ?? '0') ?? 0;
+      final iconStr = d['icon'] as String?;
+      if (iconStr != null) _panelIcon = iconFromString(iconStr) ?? Icons.widgets_outlined;
+      // Restore items list
+      final savedItems = d['items'];
+      if (savedItems is List && savedItems.isNotEmpty) {
+        for (final item in savedItems) {
+          final colorVal = int.tryParse(item['color']?.toString() ?? '');
+          _items.add({
+            'label': TextEditingController(text: item['label']?.toString() ?? ''),
+            'payload': TextEditingController(text: item['payload']?.toString() ?? ''),
+            'color': colorVal != null ? Color(colorVal) : const Color(0xFF9E9E9E),
+          });
+        }
+      } else {
+        _addItem();
+        _addItem();
+      }
+    } else {
+      _addItem();
+      _addItem();
+    }
   }
 
   void _addItem() => _items.add({
@@ -335,7 +366,7 @@ class _AddMultiStateIndicatorPanelScreenState
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          l.addMultiStateIndicator,
+          _isEditing ? l.edit : l.addMultiStateIndicator,
           style: const TextStyle(
             color: Colors.black,
             fontSize: 18,
@@ -516,7 +547,7 @@ class _AddMultiStateIndicatorPanelScreenState
                       ),
                       onPressed: _create,
                       child: Text(
-                        l.create,
+                        _isEditing ? l.save : l.create,
                         style: const TextStyle(color: Colors.white),
                       ),
                     ),

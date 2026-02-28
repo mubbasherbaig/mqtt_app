@@ -7,7 +7,9 @@ import '../widgets/icon_picker_sheet.dart';
 import '../widgets/panel_icon_picker_row.dart';
 
 class AddGaugePanelScreen extends StatefulWidget {
-  const AddGaugePanelScreen({super.key});
+  const AddGaugePanelScreen({super.key, this.initialData});
+
+  final Map<String, dynamic>? initialData;
 
   @override
   State<AddGaugePanelScreen> createState() => _AddGaugePanelScreenState();
@@ -23,6 +25,8 @@ class _AddGaugePanelScreenState extends State<AddGaugePanelScreen> {
   final _decimalPrecisionCtrl = TextEditingController();
   final _unitCtrl = TextEditingController();
 
+  bool get _isEditing => widget.initialData != null;
+
   // Arc color threshold value fields
   final _threshold1Ctrl = TextEditingController();
   final _threshold2Ctrl = TextEditingController();
@@ -37,6 +41,37 @@ class _AddGaugePanelScreenState extends State<AddGaugePanelScreen> {
   Color _arcColor3 = Colors.orange;
   int _qos = 0;
   final List<int> _qosOptions = [0, 1, 2];
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialData != null) {
+      final d = widget.initialData!;
+      _panelNameCtrl.text =
+          d['label'] as String? ?? d['panelName'] as String? ?? '';
+      _topicCtrl.text = d['topic'] as String? ?? '';
+      _payloadMinCtrl.text = d['payloadMin']?.toString() ?? '';
+      _payloadMaxCtrl.text = d['payloadMax']?.toString() ?? '';
+      _factorCtrl.text = d['factor']?.toString() ?? '1';
+      _decimalPrecisionCtrl.text = d['decimalPrecision']?.toString() ?? '';
+      _unitCtrl.text = d['unit'] as String? ?? '';
+      _threshold1Ctrl.text = d['threshold1']?.toString() ?? '';
+      _threshold2Ctrl.text = d['threshold2']?.toString() ?? '';
+      _disableDashboardPrefix = d['disableDashboardPrefix'] == true;
+      _payloadIsJson = d['payloadIsJson'] == true;
+      _showReceivedTimestamp = d['showReceivedTimestamp'] == true;
+      _qos = int.tryParse(d['qos']?.toString() ?? '0') ?? 0;
+      final c1 = int.tryParse(d['arcColor1']?.toString() ?? '');
+      if (c1 != null) _arcColor1 = Color(c1);
+      final c2 = int.tryParse(d['arcColor2']?.toString() ?? '');
+      if (c2 != null) _arcColor2 = Color(c2);
+      final c3 = int.tryParse(d['arcColor3']?.toString() ?? '');
+      if (c3 != null) _arcColor3 = Color(c3);
+      final iconStr = d['icon'] as String?;
+      if (iconStr != null)
+        _panelIcon = iconFromString(iconStr) ?? Icons.widgets_outlined;
+    }
+  }
 
   @override
   void dispose() {
@@ -113,6 +148,11 @@ class _AddGaugePanelScreenState extends State<AddGaugePanelScreen> {
         'arcColor2': _arcColor2.value.toString(),
         'arcColor3': _arcColor3.value.toString(),
         'qos': _qos,
+        'disableDashboardPrefix': _disableDashboardPrefix,
+        'payloadIsJson': _payloadIsJson,
+        'showReceivedTimestamp': _showReceivedTimestamp,
+        'threshold1': _threshold1Ctrl.text.trim(),
+        'threshold2': _threshold2Ctrl.text.trim(),
       });
     }
   }
@@ -388,7 +428,7 @@ class _AddGaugePanelScreenState extends State<AddGaugePanelScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          l.addGaugePanel,
+          _isEditing ? l.edit : l.addGaugePanel,
           style: const TextStyle(
             color: Colors.black,
             fontSize: 18,
@@ -600,9 +640,9 @@ class _AddGaugePanelScreenState extends State<AddGaugePanelScreen> {
                         ),
                       ),
                       onPressed: () => Navigator.pop(context),
-                      child: const Text(
-                        'CANCEL',
-                        style: TextStyle(
+                      child: Text(
+                        l.cancel,
+                        style: const TextStyle(
                           color: Colors.black87,
                           fontWeight: FontWeight.w600,
                           fontSize: 14,
@@ -624,9 +664,9 @@ class _AddGaugePanelScreenState extends State<AddGaugePanelScreen> {
                         elevation: 2,
                       ),
                       onPressed: _create,
-                      child: const Text(
-                        'CREATE',
-                        style: TextStyle(
+                      child: Text(
+                        _isEditing ? l.save : l.create,
+                        style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.w600,
                           fontSize: 14,

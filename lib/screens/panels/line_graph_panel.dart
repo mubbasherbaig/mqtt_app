@@ -7,8 +7,8 @@ import '../widgets/icon_picker_sheet.dart';
 import '../widgets/panel_icon_picker_row.dart';
 
 class AddLineGraphPanelScreen extends StatefulWidget {
-  const AddLineGraphPanelScreen({super.key});
-
+  const AddLineGraphPanelScreen({super.key, this.initialData});
+  final Map<String, dynamic>? initialData;
   @override
   State<AddLineGraphPanelScreen> createState() =>
       _AddLineGraphPanelScreenState();
@@ -19,6 +19,7 @@ class _AddLineGraphPanelScreenState extends State<AddLineGraphPanelScreen> {
   final _panelNameCtrl = TextEditingController();
   final _maxPersistenceCtrl = TextEditingController(text: '10');
   final _unitCtrl = TextEditingController();
+  bool get _isEditing => widget.initialData != null;
 
   IconData _panelIcon = Icons.widgets_outlined;
 
@@ -57,7 +58,40 @@ class _AddLineGraphPanelScreenState extends State<AddLineGraphPanelScreen> {
   @override
   void initState() {
     super.initState();
-    _addGraph();
+    if (widget.initialData != null) {
+      final d = widget.initialData!;
+      _panelNameCtrl.text = d['label'] as String? ?? d['panelName'] as String? ?? '';
+      _maxPersistenceCtrl.text = d['maxPersistence']?.toString() ?? '10';
+      _unitCtrl.text = d['unit'] as String? ?? '';
+      _disableDashboardPrefix = d['disableDashboardPrefix'] == true;
+      _smoothCurve = d['smoothCurve'] == true;
+      _showPlotArea = d['showPlotArea'] == true;
+      _showPointsAndTooltip = d['showPointsAndTooltip'] == true;
+      _payloadIsJson = d['payloadIsJson'] == true;
+      _retain = d['retain'] == true;
+      _maxDuration = d['maxDuration'] as String? ?? 'None';
+      _qos = int.tryParse(d['qos']?.toString() ?? '0') ?? 0;
+      final iconStr = d['icon'] as String?;
+      if (iconStr != null) _panelIcon = iconFromString(iconStr) ?? Icons.widgets_outlined;
+      // Restore graphs
+      final savedGraphs = d['graphs'];
+      if (savedGraphs is List && savedGraphs.isNotEmpty) {
+        _graphs.clear();
+        for (int i = 0; i < savedGraphs.length; i++) {
+          final g = savedGraphs[i];
+          final colorVal = int.tryParse(g['color']?.toString() ?? '');
+          _graphs.add({
+            'topic': TextEditingController(text: g['topic']?.toString() ?? ''),
+            'label': TextEditingController(text: g['label']?.toString() ?? ''),
+            'factor': TextEditingController(text: g['factor']?.toString() ?? '1'),
+            'decimalPrecision': TextEditingController(text: g['decimalPrecision']?.toString() ?? ''),
+            'color': colorVal != null ? Color(colorVal) : _defaultColors[i % _defaultColors.length],
+            'enableNotif': g['enableNotif'] == true,
+            'payloadIsJson': g['payloadIsJson'] == true,
+          });
+        }
+      }
+    }
   }
 
   void _addGraph() {
@@ -154,6 +188,13 @@ class _AddLineGraphPanelScreenState extends State<AddLineGraphPanelScreen> {
         'maxPersistence': _maxPersistenceCtrl.text.trim(),
         'maxDuration': _maxDuration,
         'qos': _qos,
+        'disableDashboardPrefix': _disableDashboardPrefix,
+        'showPlotArea': _showPlotArea,
+        'showPointsAndTooltip': _showPointsAndTooltip,
+        'payloadIsJson': _payloadIsJson,
+        'retain': _retain,
+        'unit': _unitCtrl.text.trim(),
+        'icon': iconToString(_panelIcon),
       });
     }
   }
@@ -468,7 +509,7 @@ class _AddLineGraphPanelScreenState extends State<AddLineGraphPanelScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          l.addLineGraphPanel,
+          _isEditing ? l.edit : l.addLineGraphPanel,
           style: const TextStyle(
             color: Colors.black,
             fontSize: 18,
@@ -694,7 +735,7 @@ class _AddLineGraphPanelScreenState extends State<AddLineGraphPanelScreen> {
                       ),
                       onPressed: _create,
                       child: Text(
-                        l.create,
+                        _isEditing ? l.save : l.create,
                         style: const TextStyle(color: Colors.white),
                       ),
                     ),
