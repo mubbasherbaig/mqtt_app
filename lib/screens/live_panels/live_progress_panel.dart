@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'dart:math' as math;
 import '../../services/mqtt_service.dart';
+import '../../utils/json_utils.dart';
 
 class LiveProgressPanel extends StatefulWidget {
   final Map<String, dynamic> panel;
@@ -42,7 +42,12 @@ class _LiveProgressPanelState extends State<LiveProgressPanel> {
   @override
   void initState() {
     super.initState();
-    _unsub = widget.mqtt.subscribe(widget.topic, (p) { if (mounted) setState(() => _lastPayload = p); });
+    _unsub = widget.mqtt.subscribe(widget.topic, (payload) {
+      if (!mounted) return;
+      final jsonPath = widget.panel['jsonPath'] as String? ?? '';
+      final extracted = extractJsonValue(payload, jsonPath);
+      setState(() => _lastPayload = extracted);
+    });
   }
 
   @override

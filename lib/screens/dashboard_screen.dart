@@ -9,6 +9,7 @@ import 'select_panel_screen.dart';
 import '../services/storage_service.dart';
 import '../services/multi_mqtt_service.dart';
 import '../services/mqtt_service_proxy.dart';
+import '../services/backup_service.dart';
 import 'widgets/icon_picker_sheet.dart';
 
 // ── Live panel widgets ──────────────────────────────────────
@@ -80,9 +81,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   late Map<String, dynamic> _connection;
 
   String get _connectionName => _connection['name'] ?? 'Dashboard';
-
   String get _connHost => _connection['broker'] ?? '';
-
   int get _connPort =>
       int.tryParse(_connection['port']?.toString() ?? '1883') ?? 1883;
 
@@ -159,7 +158,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             decoration: BoxDecoration(
                               color: Colors.grey.shade100,
                               borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: Colors.grey.shade300),
+                              border:
+                              Border.all(color: Colors.grey.shade300),
                             ),
                             child: Icon(
                               selectedIcon,
@@ -187,8 +187,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       children: [
                         Checkbox(
                           value: setAsHome,
-                          onChanged: (v) =>
-                              setDialogState(() => setAsHome = v ?? false),
+                          onChanged: (v) => setDialogState(
+                                  () => setAsHome = v ?? false),
                         ),
                         Text(l.setAsHome),
                       ],
@@ -204,12 +204,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         TextButton(
                           onPressed: () {
                             if (controller.text.trim().isEmpty) {
-                              setDialogState(() => nameError = l.required);
+                              setDialogState(
+                                      () => nameError = l.required);
                               return;
                             }
                             Navigator.pop(dialogContext, {
                               'name': controller.text.trim(),
-                              'icon': selectedIcon.codePoint.toString(),
+                              'icon':
+                              selectedIcon.codePoint.toString(),
                               'setAsHome': setAsHome,
                             });
                           },
@@ -256,13 +258,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: Text(l.delete, style: const TextStyle(color: Colors.red)),
+            child:
+            Text(l.delete, style: const TextStyle(color: Colors.red)),
           ),
         ],
       ),
     );
     if (confirmed == true) {
-      await StorageService.deleteDashboard(widget.connectionIndex, _currentTab);
+      await StorageService.deleteDashboard(
+          widget.connectionIndex, _currentTab);
       setState(() => _reloadDashboards());
     }
   }
@@ -274,18 +278,130 @@ class _DashboardScreenState extends State<DashboardScreen> {
       context,
       MaterialPageRoute(builder: (_) => const SelectPanelScreen()),
     );
-
     if (result != null) {
       await StorageService.addPanel(
         widget.connectionIndex,
         _currentTab,
         result,
       );
-
-      setState(() {
-        _reloadDashboards();
-      });
+      setState(() => _reloadDashboards());
     }
+  }
+
+  // ── Duplicate current dashboard ──────────────────────────
+
+  Future<void> _duplicateCurrentDashboard() async {
+    if (_dashboards.isEmpty) return;
+
+    final current = _dashboards[_currentTab];
+    final originalName = current['name'] as String? ?? 'Dashboard';
+    final icon = current['icon'] ?? Icons.dashboard_outlined.codePoint.toString();
+
+    // Copy all panels from current dashboard
+    final originalPanels = StorageService.getPanels(
+      widget.connectionIndex,
+      _currentTab,
+    );
+    final copiedPanels = originalPanels
+        .map((p) => Map<String, dynamic>.from(p))
+        .toList();
+
+    // Build new dashboard map with panels already inside
+    final newDashboard = <String, dynamic>{
+      'name': '$originalName Copy',
+      'icon': icon,
+      'setAsHome': false,
+      'panels': copiedPanels,
+    };
+
+    final newIndex = await StorageService.addDashboard(
+      widget.connectionIndex,
+      newDashboard,
+    );
+
+    setState(() {
+      _reloadDashboards();
+      if (newIndex >= 0) _currentTab = newIndex;
+    });
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+              '"$originalName" duplicated as "$originalName Copy" with ${copiedPanels.length} panel(s).'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
+  // ── Backup bottom sheet ───────────────────────────────────
+
+  void _showBackupSheet(AppLocalizations l) {
+    final connName = _connectionName;
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (_) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 8),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 12),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16),
+              child: Text(
+                'Backup & Restore',
+                style: TextStyle(
+                    fontSize: 16, fontWeight: FontWeight.w600),
+              ),
+            ),
+            const Divider(height: 20),
+            ListTile(
+              leading: const Icon(Icons.upload_outlined,
+                  color: Color(0xFF1E88E5)),
+              title: const Text('Export Backup'),
+              subtitle:
+              Text('Save dashboards & panels for "$connName"'),
+              onTap: () async {
+                Navigator.pop(context);
+                await BackupService.exportConnectionBackup(
+                  context,
+                  widget.connectionIndex,
+                  connName,
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.download_outlined,
+                  color: Colors.orange),
+              title: const Text('Import Backup'),
+              subtitle:
+              const Text('Restore dashboards & panels from file'),
+              onTap: () async {
+                Navigator.pop(context);
+                final ok = await BackupService.importConnectionBackup(
+                  context,
+                  widget.connectionIndex,
+                );
+                if (ok && mounted) setState(() => _reloadDashboards());
+              },
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
   }
 
   // ── Build ─────────────────────────────────────────────────
@@ -320,9 +436,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
         ),
         actions: [
-          // Status chip scoped to THIS connection
           Padding(
-            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+            padding:
+            const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
             child: _MqttStatusChip(state: connState),
           ),
           Container(
@@ -334,7 +450,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
               shape: BoxShape.circle,
             ),
             child: PopupMenuButton<String>(
-              icon: const Icon(Icons.more_vert, color: Colors.black87),
+              icon:
+              const Icon(Icons.more_vert, color: Colors.black87),
               onSelected: (value) async {
                 switch (value) {
                   case 'add_panel':
@@ -356,7 +473,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     );
                     break;
                   case 'disconnect':
-                    context.read<MultiMqttService>().disconnectBroker(
+                    context
+                        .read<MultiMqttService>()
+                        .disconnectBroker(
                       _connHost,
                       _connPort,
                       intentional: false,
@@ -365,7 +484,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 }
               },
               itemBuilder: (_) => [
-                PopupMenuItem(value: 'add_panel', child: Text(l.addPanel)),
+                PopupMenuItem(
+                    value: 'add_panel', child: Text(l.addPanel)),
                 PopupMenuItem(
                   value: 'add_dashboard',
                   child: Text(l.addANewDashboard),
@@ -380,17 +500,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                 const PopupMenuDivider(),
                 const PopupMenuItem(
-                  value: 'reconnect',
-                  child: Text('Reconnect'),
-                ),
+                    value: 'reconnect', child: Text('Reconnect')),
                 const PopupMenuItem(
-                  value: 'disconnect',
-                  child: Text('Disconnect'),
-                ),
+                    value: 'disconnect', child: Text('Disconnect')),
                 PopupMenuItem(
-                  value: 'settings',
-                  child: Text(l.connectionSettings),
-                ),
+                    value: 'settings',
+                    child: Text(l.connectionSettings)),
               ],
             ),
           ),
@@ -402,28 +517,40 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
       body: hasDashboards
           ? _DashboardTabBody(
-              key: ValueKey('dashboard_${widget.connectionIndex}_$_currentTab'),
-              connectionIndex: widget.connectionIndex,
-              dashboardIndex: _currentTab,
-              dashboardName: currentDashboardName,
-              connHost: _connHost,
-              connPort: _connPort,
-            )
+        key: ValueKey(
+            'dashboard_${widget.connectionIndex}_$_currentTab'),
+        connectionIndex: widget.connectionIndex,
+        dashboardIndex: _currentTab,
+        dashboardName: currentDashboardName,
+        connHost: _connHost,
+        connPort: _connPort,
+      )
           : _buildNoDashboardsState(l),
       bottomNavigationBar: hasDashboards && _dashboards.length > 1
           ? _DashboardTabBar(
-              dashboards: _dashboards,
-              currentIndex: _currentTab,
-              onTabSelected: (i) => setState(() => _currentTab = i),
-            )
+        dashboards: _dashboards,
+        currentIndex: _currentTab,
+        onTabSelected: (i) => setState(() => _currentTab = i),
+      )
           : null,
+      // ── FAB row: restore | backup | duplicate | add ──────
       floatingActionButton: hasDashboards
-          ? FloatingActionButton(
-              backgroundColor: const Color(0xFF1E88E5),
-              mini: true,
-              onPressed: _addPanel,
-              child: const Icon(Icons.add, color: Colors.white),
-            )
+          ? _FabRow(
+        onAdd: _addPanel,
+        onDuplicate: _duplicateCurrentDashboard,
+        onBackup: () => BackupService.exportConnectionBackup(
+          context,
+          widget.connectionIndex,
+          _connectionName,
+        ),
+        onRestore: () async {
+          final ok = await BackupService.importConnectionBackup(
+            context,
+            widget.connectionIndex,
+          );
+          if (ok && mounted) setState(() => _reloadDashboards());
+        },
+      )
           : null,
     );
   }
@@ -433,11 +560,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.dashboard_outlined, size: 64, color: Colors.black26),
+          const Icon(Icons.dashboard_outlined,
+              size: 64, color: Colors.black26),
           const SizedBox(height: 16),
           Text(
             l.noDashboards,
-            style: const TextStyle(fontSize: 16, color: Colors.black54),
+            style:
+            const TextStyle(fontSize: 16, color: Colors.black54),
           ),
           const SizedBox(height: 24),
           ElevatedButton.icon(
@@ -463,12 +592,90 @@ class _DashboardScreenState extends State<DashboardScreen> {
 }
 
 // ─────────────────────────────────────────────────────────────
+// FAB Row — four buttons side by side at bottom right
+// ─────────────────────────────────────────────────────────────
+
+class _FabRow extends StatelessWidget {
+  final VoidCallback onAdd;
+  final VoidCallback onDuplicate;
+  final VoidCallback onBackup;
+  final VoidCallback onRestore;
+
+  const _FabRow({
+    required this.onAdd,
+    required this.onDuplicate,
+    required this.onBackup,
+    required this.onRestore,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.end,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Restore button
+        Tooltip(
+          message: 'Import Backup',
+          child: FloatingActionButton(
+            heroTag: 'fab_restore',
+            mini: true,
+            backgroundColor: Colors.orange,
+            onPressed: onRestore,
+            child: const Icon(Icons.download_outlined,
+                color: Colors.white, size: 20),
+          ),
+        ),
+        const SizedBox(width: 8),
+        // Backup button
+        Tooltip(
+          message: 'Export Backup',
+          child: FloatingActionButton(
+            heroTag: 'fab_backup',
+            mini: true,
+            backgroundColor: const Color(0xFF43A047),
+            onPressed: onBackup,
+            child: const Icon(Icons.upload_outlined,
+                color: Colors.white, size: 20),
+          ),
+        ),
+        const SizedBox(width: 8),
+        // Duplicate dashboard button
+        Tooltip(
+          message: 'Duplicate Dashboard',
+          child: FloatingActionButton(
+            heroTag: 'fab_duplicate',
+            mini: true,
+            backgroundColor: const Color(0xFF8E24AA),
+            onPressed: onDuplicate,
+            child: const Icon(Icons.copy_all_outlined,
+                color: Colors.white, size: 20),
+          ),
+        ),
+        const SizedBox(width: 8),
+        // Add panel button (primary)
+        Tooltip(
+          message: 'Add Panel',
+          child: FloatingActionButton(
+            heroTag: 'fab_add',
+            mini: true,
+            backgroundColor: const Color(0xFF1E88E5),
+            onPressed: onAdd,
+            child:
+            const Icon(Icons.add, color: Colors.white, size: 22),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
 // MQTT status chip
 // ─────────────────────────────────────────────────────────────
 
 class _MqttStatusChip extends StatelessWidget {
   final AppMqttState state;
-
   const _MqttStatusChip({required this.state});
 
   @override
@@ -497,7 +704,8 @@ class _MqttStatusChip extends StatelessWidget {
         label = 'Offline';
     }
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding:
+      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
         borderRadius: BorderRadius.circular(12),
@@ -509,7 +717,8 @@ class _MqttStatusChip extends StatelessWidget {
           Container(
             width: 6,
             height: 6,
-            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+            decoration:
+            BoxDecoration(color: color, shape: BoxShape.circle),
           ),
           const SizedBox(width: 4),
           Text(
@@ -547,7 +756,8 @@ class _DashboardTabBar extends StatelessWidget {
       height: 72,
       decoration: BoxDecoration(
         color: Colors.white,
-        border: Border(top: BorderSide(color: Colors.grey.shade300, width: 1)),
+        border: Border(
+            top: BorderSide(color: Colors.grey.shade300, width: 1)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.06),
@@ -563,16 +773,20 @@ class _DashboardTabBar extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: List.generate(dashboards.length, (i) {
             final d = dashboards[i];
-            final name = d['name'] as String? ?? 'Dashboard ${i + 1}';
+            final name =
+                d['name'] as String? ?? 'Dashboard ${i + 1}';
             final iconData = iconFromString(d['icon'] as String?);
             final isSelected = i == currentIndex;
-            final color = isSelected ? const Color(0xFF1E88E5) : Colors.black45;
+            final color = isSelected
+                ? const Color(0xFF1E88E5)
+                : Colors.black45;
             return GestureDetector(
               onTap: () => onTabSelected(i),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 150),
                 constraints: const BoxConstraints(minWidth: 80),
-                padding: const EdgeInsets.symmetric(horizontal: 18),
+                padding:
+                const EdgeInsets.symmetric(horizontal: 18),
                 decoration: BoxDecoration(
                   border: Border(
                     top: BorderSide(
@@ -622,8 +836,8 @@ class _DashboardTabBody extends StatefulWidget {
   final int connectionIndex;
   final int dashboardIndex;
   final String dashboardName;
-  final String connHost; // ← NEW
-  final int connPort; // ← NEW
+  final String connHost;
+  final int connPort;
 
   const _DashboardTabBody({
     super.key,
@@ -680,11 +894,38 @@ class _DashboardTabBodyState extends State<_DashboardTabBody> {
     _loadPanels();
   }
 
+  // ── Duplicate panel ───────────────────────────────────────
+
+  Future<void> _duplicatePanel(int index) async {
+    final original = Map<String, dynamic>.from(_panels[index]);
+    final originalName = original['panelName'] as String? ??
+        original['label'] as String? ??
+        original['type'] as String? ??
+        'Panel';
+    original['panelName'] = '$originalName Copy';
+    if (original.containsKey('label')) {
+      original['label'] = '$originalName Copy';
+    }
+    await StorageService.addPanel(
+      widget.connectionIndex,
+      widget.dashboardIndex,
+      original,
+    );
+    _loadPanels();
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Panel duplicated'),
+          duration: Duration(seconds: 1),
+        ),
+      );
+    }
+  }
+
   Future<void> _showDeleteConfirmation(int index) async {
     final settings = context.read<AppSettings>();
     final l = AppLocalizations.of(settings.languageCode);
-    final panelName =
-        _panels[index]['panelName'] as String? ??
+    final panelName = _panels[index]['panelName'] as String? ??
         _panels[index]['label'] as String? ??
         _panels[index]['type'] as String? ??
         'Panel';
@@ -701,14 +942,13 @@ class _DashboardTabBodyState extends State<_DashboardTabBody> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: Text(l.delete, style: const TextStyle(color: Colors.red)),
+            child: Text(l.delete,
+                style: const TextStyle(color: Colors.red)),
           ),
         ],
       ),
     );
-    if (confirmed == true) {
-      await _deletePanel(index);
-    }
+    if (confirmed == true) await _deletePanel(index);
   }
 
   Future<void> _editPanel(int index) async {
@@ -811,16 +1051,15 @@ class _DashboardTabBodyState extends State<_DashboardTabBody> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.widgets_outlined, size: 64, color: Colors.black26),
+            const Icon(Icons.widgets_outlined,
+                size: 64, color: Colors.black26),
             const SizedBox(height: 16),
-            Text(
-              l.noPanels,
-              style: const TextStyle(fontSize: 16, color: Colors.black54),
-            ),
-            Text(
-              l.addFirstPanel,
-              style: const TextStyle(fontSize: 13, color: Colors.black38),
-            ),
+            Text(l.noPanels,
+                style: const TextStyle(
+                    fontSize: 16, color: Colors.black54)),
+            Text(l.addFirstPanel,
+                style: const TextStyle(
+                    fontSize: 13, color: Colors.black38)),
           ],
         ),
       );
@@ -849,6 +1088,7 @@ class _DashboardTabBodyState extends State<_DashboardTabBody> {
           connPort: widget.connPort,
           onDelete: () => _showDeleteConfirmation(index),
           onEdit: () => _editPanel(index),
+          onDuplicate: () => _duplicatePanel(index),
         );
       },
     );
@@ -867,6 +1107,7 @@ class _PanelCard extends StatelessWidget {
   final int connPort;
   final VoidCallback onDelete;
   final VoidCallback onEdit;
+  final VoidCallback onDuplicate;
 
   const _PanelCard({
     required this.panel,
@@ -876,12 +1117,14 @@ class _PanelCard extends StatelessWidget {
     required this.connPort,
     required this.onDelete,
     required this.onEdit,
+    required this.onDuplicate,
   });
 
   String _effectiveTopic(String raw) {
     final disable = panel['disableDashboardPrefix'] == true;
     if (disable || dashboardPrefix.isEmpty) return raw;
-    return '$dashboardPrefix$raw';
+    final cleanRaw = raw.startsWith('/') ? raw.substring(1) : raw;
+    return '$dashboardPrefix$cleanRaw';
   }
 
   @override
@@ -918,56 +1161,47 @@ class _PanelCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                // ── THREE-DOT MENU replaces X button ──────────
                 SizedBox(
                   width: 20,
                   height: 20,
                   child: PopupMenuButton<String>(
                     padding: EdgeInsets.zero,
                     iconSize: 16,
-                    icon: const Icon(
-                      Icons.more_vert,
-                      size: 16,
-                      color: Colors.black38,
-                    ),
+                    icon: const Icon(Icons.more_vert,
+                        size: 16, color: Colors.black38),
                     onSelected: (value) {
-                      if (value == 'edit') {
-                        onEdit();
-                      } else if (value == 'delete') {
-                        onDelete();
-                      }
+                      if (value == 'edit') onEdit();
+                      else if (value == 'duplicate') onDuplicate();
+                      else if (value == 'delete') onDelete();
                     },
                     itemBuilder: (_) => [
                       PopupMenuItem(
                         value: 'edit',
-                        child: Row(
-                          children: [
-                            const Icon(
-                              Icons.edit_outlined,
-                              size: 18,
-                              color: Colors.black54,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(l.edit),
-                          ],
-                        ),
+                        child: Row(children: [
+                          const Icon(Icons.edit_outlined,
+                              size: 18, color: Colors.black54),
+                          const SizedBox(width: 8),
+                          Text(l.edit),
+                        ]),
+                      ),
+                      PopupMenuItem(
+                        value: 'duplicate',
+                        child: Row(children: [
+                          const Icon(Icons.copy_outlined,
+                              size: 18, color: Colors.black54),
+                          const SizedBox(width: 8),
+                          const Text('Duplicate'),
+                        ]),
                       ),
                       PopupMenuItem(
                         value: 'delete',
-                        child: Row(
-                          children: [
-                            const Icon(
-                              Icons.delete_outline,
-                              size: 18,
-                              color: Colors.red,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              l.delete,
-                              style: const TextStyle(color: Colors.red),
-                            ),
-                          ],
-                        ),
+                        child: Row(children: [
+                          const Icon(Icons.delete_outline,
+                              size: 18, color: Colors.red),
+                          const SizedBox(width: 8),
+                          Text(l.delete,
+                              style: const TextStyle(color: Colors.red)),
+                        ]),
                       ),
                     ],
                   ),
@@ -986,12 +1220,10 @@ class _PanelCard extends StatelessWidget {
     final rawTopic = panel['topic'] as String? ?? '';
     final topic = _effectiveTopic(rawTopic);
     final qos = int.tryParse(panel['qos']?.toString() ?? '0') ?? 0;
-
     final rawSub = panel['subscribeTopic'] as String? ?? '';
     final enriched = Map<String, dynamic>.from(panel);
-    if (rawSub.isNotEmpty) enriched['subscribeTopic'] = _effectiveTopic(rawSub);
-
-    // Get the proxy for this specific connection — same API as old MqttService
+    if (rawSub.isNotEmpty)
+      enriched['subscribeTopic'] = _effectiveTopic(rawSub);
     final mqtt = multiMqtt.getProxy(connHost, connPort);
 
     switch (type) {
@@ -999,104 +1231,70 @@ class _PanelCard extends StatelessWidget {
         return LiveButtonPanel(panel: enriched, topic: topic, mqtt: mqtt);
       case 'Switch':
         return LiveSwitchPanel(
-          panel: enriched,
-          topic: topic,
-          mqtt: mqtt,
-          qos: qos,
-        );
+            panel: enriched, topic: topic, mqtt: mqtt, qos: qos);
       case 'Text Output':
-        return LiveTextOutputPanel(panel: enriched, topic: topic, mqtt: mqtt);
+        return LiveTextOutputPanel(
+            panel: enriched, topic: topic, mqtt: mqtt);
       case 'Text Input':
         return LiveTextInputPanel(
-          panel: enriched,
-          topic: topic,
-          mqtt: mqtt,
-          qos: qos,
-        );
+            panel: enriched, topic: topic, mqtt: mqtt, qos: qos);
       case 'Slider':
         return LiveSliderPanel(
-          panel: enriched,
-          topic: topic,
-          mqtt: mqtt,
-          qos: qos,
-        );
+            panel: enriched, topic: topic, mqtt: mqtt, qos: qos);
       case 'Node Status':
-        return LiveNodeStatusPanel(panel: enriched, topic: topic, mqtt: mqtt);
+        return LiveNodeStatusPanel(
+            panel: enriched, topic: topic, mqtt: mqtt);
       case 'LED Indicator':
-        return LiveLedIndicatorPanel(panel: enriched, topic: topic, mqtt: mqtt);
+        return LiveLedIndicatorPanel(
+            panel: enriched, topic: topic, mqtt: mqtt);
       case 'Multi-State Indicator':
         return LiveMultiStateIndicatorPanel(
-          panel: enriched,
-          topic: topic,
-          mqtt: mqtt,
-        );
+            panel: enriched, topic: topic, mqtt: mqtt);
       case 'Combo Box':
         return LiveComboBoxPanel(
-          panel: enriched,
-          topic: topic,
-          mqtt: mqtt,
-          qos: qos,
-        );
+            panel: enriched, topic: topic, mqtt: mqtt, qos: qos);
       case 'Radio Buttons':
         return LiveRadioButtonsPanel(
-          panel: enriched,
-          topic: topic,
-          mqtt: mqtt,
-          qos: qos,
-        );
+            panel: enriched, topic: topic, mqtt: mqtt, qos: qos);
       case 'Progress':
         return LiveProgressPanel(panel: enriched, topic: topic, mqtt: mqtt);
       case 'Gauge':
         return LiveGaugePanel(panel: enriched, topic: topic, mqtt: mqtt);
       case 'Line Graph':
         return LiveLineGraphPanel(
-          panel: enriched,
-          dashboardPrefix: dashboardPrefix,
-          mqtt: mqtt,
-        );
+            panel: enriched,
+            dashboardPrefix: dashboardPrefix,
+            mqtt: mqtt);
       case 'Bar Graph':
         return LiveBarGraphPanel(
-          panel: enriched,
-          dashboardPrefix: dashboardPrefix,
-          mqtt: mqtt,
-        );
+            panel: enriched,
+            dashboardPrefix: dashboardPrefix,
+            mqtt: mqtt);
       case 'Chart':
         return LiveChartPanel(
-          panel: enriched,
-          dashboardPrefix: dashboardPrefix,
-          mqtt: mqtt,
-        );
+            panel: enriched,
+            dashboardPrefix: dashboardPrefix,
+            mqtt: mqtt);
       case 'Color Picker':
         return LiveColorPickerPanel(
-          panel: enriched,
-          topic: topic,
-          mqtt: mqtt,
-          qos: qos,
-        );
+            panel: enriched, topic: topic, mqtt: mqtt, qos: qos);
       case 'Date Time Picker':
         return LiveDateTimePickerPanel(
-          panel: enriched,
-          topic: topic,
-          mqtt: mqtt,
-          qos: qos,
-        );
+            panel: enriched, topic: topic, mqtt: mqtt, qos: qos);
       case 'Image':
         return LiveImagePanel(panel: enriched, topic: topic, mqtt: mqtt);
       case 'Barcode Scanner':
         return LiveBarcodeScannerPanel(
-          panel: enriched,
-          topic: topic,
-          mqtt: mqtt,
-          qos: qos,
-        );
+            panel: enriched, topic: topic, mqtt: mqtt, qos: qos);
       case 'URI Launcher':
-        return LiveUriLauncherPanel(panel: enriched, topic: topic, mqtt: mqtt);
+        return LiveUriLauncherPanel(
+            panel: enriched, topic: topic, mqtt: mqtt);
       case 'Layout Decorator':
         return LiveLayoutDecoratorPanel(panel: enriched);
       default:
         return Center(
-          child: Text(type, style: const TextStyle(color: Colors.black38)),
-        );
+            child: Text(type,
+                style: const TextStyle(color: Colors.black38)));
     }
   }
 }

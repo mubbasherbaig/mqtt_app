@@ -23,7 +23,7 @@ class _AddMultiStateIndicatorPanelScreenState
   IconData _panelIcon = Icons.widgets_outlined;
   bool get _isEditing => widget.initialData != null;
 
-  bool _disableDashboardPrefix = false;
+  bool _disableDashboardPrefix = true;
   bool _enableNotification = false;
   bool _payloadIsJson = false;
   bool _showReceivedTimestamp = false;
@@ -38,6 +38,8 @@ class _AddMultiStateIndicatorPanelScreenState
 
   // Each item: label, payload, iconColor
   final List<Map<String, dynamic>> _items = [];
+
+  final _jsonPathCtrl    = TextEditingController();
 
   @override
   void initState() {
@@ -55,7 +57,7 @@ class _AddMultiStateIndicatorPanelScreenState
       _qos = int.tryParse(d['qos']?.toString() ?? '0') ?? 0;
       final iconStr = d['icon'] as String?;
       if (iconStr != null) _panelIcon = iconFromString(iconStr) ?? Icons.widgets_outlined;
-      // Restore items list
+      _jsonPathCtrl.text    = d['jsonPath'] as String? ?? '';
       final savedItems = d['items'];
       if (savedItems is List && savedItems.isNotEmpty) {
         for (final item in savedItems) {
@@ -90,6 +92,7 @@ class _AddMultiStateIndicatorPanelScreenState
       (i['label'] as TextEditingController).dispose();
       (i['payload'] as TextEditingController).dispose();
     }
+    _jsonPathCtrl.dispose();
     super.dispose();
   }
 
@@ -138,6 +141,7 @@ class _AddMultiStateIndicatorPanelScreenState
         'showSentTimestamp': _showSentTimestamp,
         'retain': _retain,
         'qos': _qos,
+        'jsonPath':    _jsonPathCtrl.text.trim(),
       });
     }
   }
@@ -517,6 +521,9 @@ class _AddMultiStateIndicatorPanelScreenState
               _payloadIsJson,
               (v) => setState(() => _payloadIsJson = v),
             ),
+            if (_payloadIsJson) ...[
+              _fieldRow(l.jsonPath, _jsonPathCtrl),
+            ],
             _checkRow(
               l.showReceivedTimestamp,
               _showReceivedTimestamp,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
 import '../../services/mqtt_service.dart';
+import '../../utils/json_utils.dart';
 
 class LiveChartPanel extends StatefulWidget {
   final Map<String, dynamic> panel;
@@ -26,7 +27,8 @@ class _LiveChartPanelState extends State<LiveChartPanel> {
   String _topic(String raw) {
     final disable = widget.panel['disableDashboardPrefix'] == true;
     if (disable || widget.dashboardPrefix.isEmpty) return raw;
-    return '${widget.dashboardPrefix}$raw';
+    final cleanRaw = raw.startsWith('/') ? raw.substring(1) : raw;
+    return '${widget.dashboardPrefix}$cleanRaw';
   }
 
   @override
@@ -39,7 +41,9 @@ class _LiveChartPanelState extends State<LiveChartPanel> {
       if (rawTopic.isEmpty) { _unsubs.add(null); continue; }
       final factor = double.tryParse(item['factor']?.toString() ?? '1') ?? 1;
       _unsubs.add(widget.mqtt.subscribe(_topic(rawTopic), (payload) {
-        final v = double.tryParse(payload);
+        final jsonPath = item['jsonPath']?.toString() ?? '';
+        final extracted = extractJsonValue(payload, jsonPath);
+        final v = double.tryParse(extracted);
         if (v == null || !mounted) return;
         setState(() => _values[i] = (v * factor).abs());
       }));
@@ -89,7 +93,6 @@ class _ChartPainter extends CustomPainter {
         start += sweep;
       }
     } else {
-      // Pie
       double start = -math.pi / 2;
       for (int i = 0; i < values.length; i++) {
         final sweep = (values[i] / total) * 2 * math.pi;

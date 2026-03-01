@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../services/mqtt_service.dart';
+import '../../utils/json_utils.dart';
 
 class LiveTextInputPanel extends StatefulWidget {
   final Map<String, dynamic> panel;
@@ -23,13 +24,34 @@ class _LiveTextInputPanelState extends State<LiveTextInputPanel> {
   final _ctrl = TextEditingController();
   bool _sent = false;
 
+  VoidCallback? _unsub;
+
   bool get _clearOnPublish => widget.panel['clearTextOnPublish'] == true;
   bool get _retain => widget.panel['retain'] == true;
+  String get _subTopic {
+    final sub = widget.panel['subscribeTopic'] as String? ?? '';
+    return sub.isNotEmpty ? sub : '';
+  }
+
   bool get _confirmBeforePublish =>
       widget.panel['confirmBeforePublish'] == true;
 
   @override
+  void initState() {
+    super.initState();
+    if (_subTopic.isNotEmpty) {
+      _unsub = widget.mqtt.subscribe(_subTopic, (payload) {
+        if (!mounted) return;
+        final jsonPath = widget.panel['jsonPath'] as String? ?? '';
+        final extracted = extractJsonValue(payload, jsonPath);
+        _ctrl.text = extracted;
+      });
+    }
+  }
+
+  @override
   void dispose() {
+    _unsub?.call();
     _ctrl.dispose();
     super.dispose();
   }
@@ -57,8 +79,9 @@ class _LiveTextInputPanelState extends State<LiveTextInputPanel> {
       if (ok != true) return;
     }
 
-    widget.mqtt.publish(widget.topic, text,
-        qos: widget.qos, retain: _retain);
+    final jsonPattern = widget.panel['jsonPattern'] as String? ?? '';
+    final toSend = buildJsonPayload(text, jsonPattern);
+    widget.mqtt.publish(widget.topic, toSend, qos: widget.qos, retain: _retain);
 
     setState(() => _sent = true);
     Future.delayed(const Duration(seconds: 1), () {

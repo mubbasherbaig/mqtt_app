@@ -23,11 +23,15 @@ class _AddSliderPanelScreenState extends State<AddSliderPanelScreen> {
   final _unitCtrl = TextEditingController();
   final _factorCtrl = TextEditingController(text: '1');
   final _decimalPrecisionCtrl = TextEditingController();
+
+  final _jsonPathCtrl    = TextEditingController();
+  final _jsonPatternCtrl = TextEditingController();
+
   bool get _isEditing => widget.initialData != null;
 
   IconData _panelIcon = Icons.widgets_outlined;
 
-  bool _disableDashboardPrefix = false;
+  bool _disableDashboardPrefix = true;
   bool _dynamicColor = false;
   bool _enableNotification = false;
   bool _payloadIsJson = false;
@@ -67,6 +71,8 @@ class _AddSliderPanelScreenState extends State<AddSliderPanelScreen> {
       if (colorVal != null) _sliderColor = Color(colorVal);
       final iconStr = d['icon'] as String?;
       if (iconStr != null) _panelIcon = iconFromString(iconStr) ?? Icons.widgets_outlined;
+      _jsonPathCtrl.text    = d['jsonPath'] as String? ?? '';
+      _jsonPatternCtrl.text = d['jsonPattern'] as String? ?? '';
     }
   }
 
@@ -81,6 +87,8 @@ class _AddSliderPanelScreenState extends State<AddSliderPanelScreen> {
     _unitCtrl.dispose();
     _factorCtrl.dispose();
     _decimalPrecisionCtrl.dispose();
+    _jsonPathCtrl.dispose();
+    _jsonPatternCtrl.dispose();
     super.dispose();
   }
 
@@ -149,12 +157,13 @@ class _AddSliderPanelScreenState extends State<AddSliderPanelScreen> {
         'sliderColor': _sliderColor.value.toString(),
         'retain': _retain,
         'qos': _qos,
-        // Fixed: Adding missing boolean flags
         'disableDashboardPrefix': _disableDashboardPrefix,
         'dynamicColor': _dynamicColor,
         'payloadIsJson': _payloadIsJson,
         'showReceivedTimestamp': _showReceivedTimestamp,
         'showSentTimestamp': _showSentTimestamp,
+        'jsonPath':    _jsonPathCtrl.text.trim(),
+        'jsonPattern': _jsonPatternCtrl.text.trim(),
       });
     }
   }
@@ -486,6 +495,10 @@ class _AddSliderPanelScreenState extends State<AddSliderPanelScreen> {
               _payloadIsJson,
               (v) => setState(() => _payloadIsJson = v),
             ),
+            if (_payloadIsJson) ...[
+              _fieldRow(l.jsonPath, _jsonPathCtrl, showHelp: true),
+              _fieldRow(l.jsonPattern, _jsonPatternCtrl, showHelp: true),
+            ],
             _checkRow(
               l.showReceivedTimestamp,
               _showReceivedTimestamp,

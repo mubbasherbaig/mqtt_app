@@ -1,6 +1,6 @@
-
 import 'package:flutter/material.dart';
 import '../../services/mqtt_service.dart';
+import '../../utils/json_utils.dart';
 
 class LiveDateTimePickerPanel extends StatefulWidget {
   final Map<String, dynamic> panel;
@@ -54,7 +54,9 @@ class _LiveDateTimePickerPanelState extends State<LiveDateTimePickerPanel> {
     }
 
     if (result != null) {
-      widget.mqtt.publish(widget.topic, result, qos: widget.qos, retain: _retain);
+      final jsonPattern = widget.panel['jsonPattern'] as String? ?? '';
+      final toSend = buildJsonPayload(result!, jsonPattern);
+      widget.mqtt.publish(widget.topic, toSend, qos: widget.qos, retain: _retain);
       setState(() { _lastSent = result!; _sent = true; });
       Future.delayed(const Duration(seconds: 2), () { if (mounted) setState(() => _sent = false); });
     }

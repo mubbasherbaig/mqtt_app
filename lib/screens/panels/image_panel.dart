@@ -18,7 +18,7 @@ class _AddImagePanelScreenState extends State<AddImagePanelScreen> {
   final _panelNameCtrl = TextEditingController();
   final _topicCtrl = TextEditingController();
   IconData _panelIcon = Icons.widgets_outlined;
-  bool _disableDashboardPrefix = false;
+  bool _disableDashboardPrefix = true;
   bool _autoRefresh = false;
   bool _fitToPanelWidth = true;
   bool _enableNotification = false;

@@ -25,7 +25,7 @@ class _AddSwitchPanelScreenState extends State<AddSwitchPanelScreen> {
 
   IconData _panelIcon = Icons.widgets_outlined;
 
-  bool _disableDashboardPrefix = false;
+  bool _disableDashboardPrefix = true;
   bool _payloadIsJson = false;
   bool _showReceivedTimestamp = false;
   bool _showSentTimestamp = false;
@@ -41,6 +41,9 @@ class _AddSwitchPanelScreenState extends State<AddSwitchPanelScreen> {
   Color _offIconColor = const Color(0xFF005C00);
   String _iconSize = 'Small';
   final List<String> _iconSizes = ['Small', 'Medium', 'Large'];
+
+  final _jsonPathCtrl    = TextEditingController();
+  final _jsonPatternCtrl = TextEditingController();
 
   @override
   void initState() {
@@ -72,6 +75,8 @@ class _AddSwitchPanelScreenState extends State<AddSwitchPanelScreen> {
       if (onIconStr != null) _onIcon = iconFromString(onIconStr) ?? Icons.lightbulb;
       final offIconStr = d['offIcon'] as String?;
       if (offIconStr != null) _offIcon = iconFromString(offIconStr) ?? Icons.lightbulb_outline;
+      _jsonPathCtrl.text    = d['jsonPath'] as String? ?? '';
+      _jsonPatternCtrl.text = d['jsonPattern'] as String? ?? '';
     }
   }
 
@@ -82,6 +87,8 @@ class _AddSwitchPanelScreenState extends State<AddSwitchPanelScreen> {
     _subscribeTopicController.dispose();
     _payloadOnController.dispose();
     _payloadOffController.dispose();
+    _jsonPathCtrl.dispose();
+    _jsonPatternCtrl.dispose();
     super.dispose();
   }
 
@@ -188,6 +195,8 @@ class _AddSwitchPanelScreenState extends State<AddSwitchPanelScreen> {
         'onIconColor': _onIconColor.value.toString(),
         'offIconColor': _offIconColor.value.toString(),
         'iconSize': _iconSize,
+        'jsonPath':    _jsonPathCtrl.text.trim(),
+        'jsonPattern': _jsonPatternCtrl.text.trim(),
       });
     }
   }
@@ -532,6 +541,10 @@ class _AddSwitchPanelScreenState extends State<AddSwitchPanelScreen> {
               _payloadIsJson,
               (v) => setState(() => _payloadIsJson = v),
             ),
+            if (_payloadIsJson) ...[
+              _fieldRow(l.jsonPath, _jsonPathCtrl, showHelp: true),
+              _fieldRow(l.jsonPattern, _jsonPatternCtrl, showHelp: true),
+            ],
             _checkRow(
               l.showReceivedTimestamp,
               _showReceivedTimestamp,

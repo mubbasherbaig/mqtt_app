@@ -24,7 +24,7 @@ class _AddTextOutputPanelScreenState extends State<AddTextOutputPanelScreen> {
 
   IconData _panelIcon = Icons.widgets_outlined;
 
-  bool _disableDashboardPrefix = false;
+  bool _disableDashboardPrefix = true;
   bool _showHistory = false;
   bool _payloadIsJson = false;
   bool _showReceivedTimestamp = false;
@@ -33,6 +33,7 @@ class _AddTextOutputPanelScreenState extends State<AddTextOutputPanelScreen> {
 
   final List<String> _textSizes = ['Small', 'Medium', 'Large', 'Extra Large'];
   final List<int> _qosOptions = [0, 1, 2];
+  final _jsonPathCtrl    = TextEditingController();
 
   @override
   void dispose() {
@@ -41,6 +42,7 @@ class _AddTextOutputPanelScreenState extends State<AddTextOutputPanelScreen> {
     _factorCtrl.dispose();
     _decimalPrecisionCtrl.dispose();
     _unitCtrl.dispose();
+    _jsonPathCtrl.dispose();
     super.dispose();
   }
   @override
@@ -61,6 +63,7 @@ class _AddTextOutputPanelScreenState extends State<AddTextOutputPanelScreen> {
       _qos = int.tryParse(d['qos']?.toString() ?? '0') ?? 0;
       final iconStr = d['icon'] as String?;
       if (iconStr != null) _panelIcon = iconFromString(iconStr) ?? Icons.widgets_outlined;
+      _jsonPathCtrl.text    = d['jsonPath'] as String? ?? '';
     }
   }
   void _create() {
@@ -79,6 +82,7 @@ class _AddTextOutputPanelScreenState extends State<AddTextOutputPanelScreen> {
         'disableDashboardPrefix': _disableDashboardPrefix,
         'payloadIsJson': _payloadIsJson,
         'showReceivedTimestamp': _showReceivedTimestamp,
+        'jsonPath':    _jsonPathCtrl.text.trim(),
       });
     }
   }
@@ -328,6 +332,9 @@ class _AddTextOutputPanelScreenState extends State<AddTextOutputPanelScreen> {
               _payloadIsJson,
               (v) => setState(() => _payloadIsJson = v),
             ),
+            if (_payloadIsJson) ...[
+              _fieldRow(l.jsonPath, _jsonPathCtrl, showHelp: true),
+            ],
             _checkRow(
               l.showReceivedTimestamp,
               _showReceivedTimestamp,

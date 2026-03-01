@@ -24,7 +24,7 @@ class _AddUriLauncherPanelScreenState extends State<AddUriLauncherPanelScreen> {
 
   IconData _panelIcon = Icons.widgets_outlined;
 
-  bool _disableDashboardPrefix = false;
+  bool _disableDashboardPrefix = true;
   bool _staticUrl = false;
   bool _enableNotification = false;
   bool _payloadIsJson = false;
@@ -32,6 +32,8 @@ class _AddUriLauncherPanelScreenState extends State<AddUriLauncherPanelScreen> {
   int _qos = 0;
 
   final List<int> _qosOptions = [0, 1, 2];
+
+  final _jsonPathCtrl    = TextEditingController();
 
   @override
   void initState() {
@@ -49,6 +51,7 @@ class _AddUriLauncherPanelScreenState extends State<AddUriLauncherPanelScreen> {
       final iconStr = d['icon'] as String?;
       if (iconStr != null) _panelIcon = iconFromString(iconStr) ?? Icons.widgets_outlined;
       _subscribeTopicCtrl.text = d['subscribeTopic'] as String? ?? '';
+      _jsonPathCtrl.text    = d['jsonPath'] as String? ?? '';
     }
   }
 
@@ -57,6 +60,7 @@ class _AddUriLauncherPanelScreenState extends State<AddUriLauncherPanelScreen> {
     _panelNameCtrl.dispose();
     _topicCtrl.dispose();
     _subscribeTopicCtrl.dispose();
+    _jsonPathCtrl.dispose();
     super.dispose();
   }
 
@@ -73,6 +77,7 @@ class _AddUriLauncherPanelScreenState extends State<AddUriLauncherPanelScreen> {
         'payloadIsJson': _payloadIsJson,
         'showReceivedTimestamp': _showReceivedTimestamp,
         'subscribeTopic': _subscribeTopicCtrl.text.trim(),
+        'jsonPath':    _jsonPathCtrl.text.trim(),
       });
     }
   }
@@ -281,6 +286,9 @@ class _AddUriLauncherPanelScreenState extends State<AddUriLauncherPanelScreen> {
               _payloadIsJson,
               (v) => setState(() => _payloadIsJson = v),
             ),
+            if (_payloadIsJson) ...[
+              _field(l.jsonPath, _jsonPathCtrl, showHelp: true),
+            ],
             _check(
               l.showReceivedTimestamp,
               _showReceivedTimestamp,

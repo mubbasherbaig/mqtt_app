@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:mqtt_app/screens/add_connection_screen.dart';
 import '../services/mqtt_service.dart';
+import '../services/backup_service.dart';
 import 'app_localizations.dart';
 import 'app_settings.dart';
 import 'app_setttings_screen.dart';
@@ -27,8 +28,6 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _connections = StorageService.loadConnections();
-
-    // Try to reconnect all brokers when screen opens
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) context.read<MultiMqttService>().resumeAll();
     });
@@ -43,9 +42,13 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed && mounted) {
-      setState(() => _connections = StorageService.loadConnections());
+      _reload();
       context.read<MultiMqttService>().resumeAll();
     }
+  }
+
+  void _reload() {
+    setState(() => _connections = StorageService.loadConnections());
   }
 
   Future<void> _goToAddConnection() async {
@@ -55,7 +58,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
     );
     if (result != null) {
       await StorageService.addConnection(result);
-      setState(() => _connections = StorageService.loadConnections());
+      _reload();
     }
   }
 
@@ -64,13 +67,13 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
     final conn = _connections[index];
     final host = conn['broker'] ?? '';
     final port = int.tryParse(conn['port']?.toString() ?? '1883') ?? 1883;
-    // Intentionally disconnect and remove from pool
     await mqtt.disconnectBroker(host, port, intentional: true);
     await StorageService.deleteConnection(index);
-    setState(() => _connections = StorageService.loadConnections());
+    _reload();
   }
 
-  Future<void> _openConnection(Map<String, dynamic> conn, int index) async {
+  Future<void> _openConnection(
+      Map<String, dynamic> conn, int index) async {
     final mqtt = context.read<MultiMqttService>();
     final host     = conn['broker'] ?? '';
     final port     = int.tryParse(conn['port']?.toString() ?? '1883') ?? 1883;
@@ -79,7 +82,6 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
     final password = conn['password'] ?? '';
 
     if (host.isNotEmpty) {
-      // connectBroker is idempotent — if already connected, does nothing
       mqtt.connectBroker(
         host: host, port: port,
         clientId: clientId, username: username, password: password,
@@ -87,7 +89,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
     }
 
     if (!mounted) return;
-    Navigator.push(
+    await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => DashboardScreen(
@@ -97,6 +99,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
         ),
       ),
     );
+    _reload();
   }
 
   @override
@@ -107,7 +110,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
 
     return Scaffold(
       backgroundColor: Colors.white,
-      drawer: const AppDrawer(),
+      drawer: AppDrawer(onBackupRestored: _reload),
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -120,7 +123,9 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
         title: Text(
           l.connections,
           style: const TextStyle(
-              color: Colors.black, fontSize: 22, fontWeight: FontWeight.w600),
+              color: Colors.black,
+              fontSize: 22,
+              fontWeight: FontWeight.w600),
         ),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
@@ -147,35 +152,39 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
           const SizedBox(height: 16),
           Text(l.noConnections,
               textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 16, color: Colors.black54)),
+              style:
+              const TextStyle(fontSize: 16, color: Colors.black54)),
           const SizedBox(height: 24),
           ElevatedButton.icon(
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF1E88E5),
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 24, vertical: 12),
             ),
             onPressed: _goToAddConnection,
             icon: const Icon(Icons.add, color: Colors.white),
             label: Text(l.addConnection,
-                style: const TextStyle(color: Colors.white, fontSize: 15)),
+                style: const TextStyle(
+                    color: Colors.white, fontSize: 15)),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildConnectionsList(AppLocalizations l, MultiMqttService mqtt) {
+  Widget _buildConnectionsList(
+      AppLocalizations l, MultiMqttService mqtt) {
     return ListView.separated(
       padding: const EdgeInsets.symmetric(vertical: 8),
       itemCount: _connections.length,
-      separatorBuilder: (_, __) =>
-      const Divider(height: 1, thickness: 1, color: Color(0xFFE0E0E0)),
+      separatorBuilder: (_, __) => const Divider(
+          height: 1, thickness: 1, color: Color(0xFFE0E0E0)),
       itemBuilder: (context, index) {
         final conn = _connections[index];
-        final host = conn['broker'] ?? '';
-        final port = int.tryParse(conn['port']?.toString() ?? '1883') ?? 1883;
-
-        // Each connection has its own independent state
+        final host =
+            conn['broker'] ?? '';
+        final port =
+            int.tryParse(conn['port']?.toString() ?? '1883') ?? 1883;
         final state = mqtt.getState(host, port);
 
         return ListTile(
@@ -183,11 +192,13 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
           const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
           title: Text(
             conn['name'] ?? '',
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+            style: const TextStyle(
+                fontSize: 16, fontWeight: FontWeight.w500),
           ),
           subtitle: Text(
             '$host:$port',
-            style: const TextStyle(fontSize: 13, color: Colors.black54),
+            style:
+            const TextStyle(fontSize: 13, color: Colors.black54),
           ),
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
@@ -195,17 +206,52 @@ class _ConnectionsScreenState extends State<ConnectionsScreen>
               _ConnectionStatusDot(state: state),
               const SizedBox(width: 8),
               Container(
-                width: 40, height: 40,
+                width: 40,
+                height: 40,
                 decoration: BoxDecoration(
-                    color: Colors.grey.shade200, shape: BoxShape.circle),
+                    color: Colors.grey.shade200,
+                    shape: BoxShape.circle),
                 child: PopupMenuButton<String>(
-                  icon: const Icon(Icons.more_vert, color: Colors.black87),
-                  onSelected: (value) {
-                    if (value == 'delete') _deleteConnection(index);
+                  icon: const Icon(Icons.more_vert,
+                      color: Colors.black87),
+                  onSelected: (value) async {
+                    if (value == 'delete') {
+                      _deleteConnection(index);
+                    } else if (value == 'export') {
+                      await BackupService.exportConnectionBackup(
+                        context,
+                        index,
+                        conn['name'] ?? 'connection',
+                      );
+                    } else if (value == 'import') {
+                      final ok =
+                      await BackupService.importConnectionBackup(
+                          context, index);
+                      if (ok) _reload();
+                    }
                   },
                   itemBuilder: (_) => [
-                    PopupMenuItem(value: 'edit',   child: Text(l.edit)),
-                    PopupMenuItem(value: 'delete', child: Text(l.delete)),
+                    PopupMenuItem(value: 'edit', child: Text(l.edit)),
+                    const PopupMenuItem(
+                      value: 'export',
+                      child: Row(children: [
+                        Icon(Icons.upload_outlined,
+                            size: 18, color: Colors.black54),
+                        SizedBox(width: 8),
+                        Text('Export Backup'),
+                      ]),
+                    ),
+                    const PopupMenuItem(
+                      value: 'import',
+                      child: Row(children: [
+                        Icon(Icons.download_outlined,
+                            size: 18, color: Colors.black54),
+                        SizedBox(width: 8),
+                        Text('Import Backup'),
+                      ]),
+                    ),
+                    PopupMenuItem(
+                        value: 'delete', child: Text(l.delete)),
                   ],
                 ),
               ),
@@ -224,7 +270,8 @@ class _ConnectionStatusDot extends StatefulWidget {
   const _ConnectionStatusDot({required this.state});
 
   @override
-  State<_ConnectionStatusDot> createState() => _ConnectionStatusDotState();
+  State<_ConnectionStatusDot> createState() =>
+      _ConnectionStatusDotState();
 }
 
 class _ConnectionStatusDotState extends State<_ConnectionStatusDot>
@@ -242,7 +289,10 @@ class _ConnectionStatusDotState extends State<_ConnectionStatusDot>
   }
 
   @override
-  void dispose() { _ctrl.dispose(); super.dispose(); }
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -250,7 +300,8 @@ class _ConnectionStatusDotState extends State<_ConnectionStatusDot>
       case AppMqttState.connected:
         return Container(
           width: 12, height: 12,
-          decoration: const BoxDecoration(color: Colors.green, shape: BoxShape.circle),
+          decoration: const BoxDecoration(
+              color: Colors.green, shape: BoxShape.circle),
         );
       case AppMqttState.connecting:
       case AppMqttState.reconnecting:
@@ -258,18 +309,21 @@ class _ConnectionStatusDotState extends State<_ConnectionStatusDot>
           opacity: _anim,
           child: Container(
             width: 12, height: 12,
-            decoration: const BoxDecoration(color: Colors.orange, shape: BoxShape.circle),
+            decoration: const BoxDecoration(
+                color: Colors.orange, shape: BoxShape.circle),
           ),
         );
       case AppMqttState.error:
         return Container(
           width: 12, height: 12,
-          decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
+          decoration: const BoxDecoration(
+              color: Colors.red, shape: BoxShape.circle),
         );
       default:
         return Container(
           width: 12, height: 12,
-          decoration: const BoxDecoration(color: Colors.black26, shape: BoxShape.circle),
+          decoration: const BoxDecoration(
+              color: Colors.black26, shape: BoxShape.circle),
         );
     }
   }
@@ -277,7 +331,8 @@ class _ConnectionStatusDotState extends State<_ConnectionStatusDot>
 
 // ── Drawer ────────────────────────────────────────────────────
 class AppDrawer extends StatelessWidget {
-  const AppDrawer({super.key});
+  final VoidCallback? onBackupRestored;
+  const AppDrawer({super.key, this.onBackupRestored});
 
   @override
   Widget build(BuildContext context) {
@@ -287,6 +342,7 @@ class AppDrawer extends StatelessWidget {
       backgroundColor: Colors.white,
       child: Column(
         children: [
+          // Header
           Container(
             height: 180,
             color: const Color(0xFF1565C0),
@@ -303,7 +359,9 @@ class AppDrawer extends StatelessWidget {
                 const SizedBox(height: 8),
                 Text(l.appName,
                     style: const TextStyle(
-                        color: Colors.white, fontSize: 20, fontWeight: FontWeight.w600)),
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w600)),
               ],
             ),
           ),
@@ -318,8 +376,49 @@ class AppDrawer extends StatelessWidget {
             title: Text(l.appSettings),
             onTap: () {
               Navigator.pop(context);
-              Navigator.push(context,
-                  MaterialPageRoute(builder: (_) => const AppSettingsScreen()));
+              Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) => const AppSettingsScreen()));
+            },
+          ),
+          const Divider(height: 1),
+          // Full backup section
+          Padding(
+            padding:
+            const EdgeInsets.fromLTRB(16, 12, 16, 4),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Full Backup',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey.shade500,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.upload_outlined,
+                color: Color(0xFF1E88E5)),
+            title: const Text('Export Full Backup'),
+            subtitle: const Text('Save all dashboards & panels'),
+            onTap: () async {
+              Navigator.pop(context);
+              await BackupService.exportFullBackup(context);
+            },
+          ),
+          ListTile(
+            leading:
+            const Icon(Icons.download_outlined, color: Colors.orange),
+            title: const Text('Import Full Backup'),
+            subtitle: const Text('Restore everything from file'),
+            onTap: () async {
+              Navigator.pop(context);
+              final ok = await BackupService.importFullBackup(context);
+              if (ok) onBackupRestored?.call();
             },
           ),
         ],

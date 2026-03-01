@@ -26,7 +26,7 @@ class _AddRadioButtonsPanelScreenState
 
   IconData _panelIcon = Icons.widgets_outlined;
 
-  bool _disableDashboardPrefix = false;
+  bool _disableDashboardPrefix = true;
   bool _enableNotification = false;
   bool _payloadIsJson = false;
   bool _showReceivedTimestamp = false;
@@ -37,12 +37,14 @@ class _AddRadioButtonsPanelScreenState
 
   final List<Map<String, TextEditingController>> _items = [];
 
+  final _jsonPathCtrl    = TextEditingController();
+  final _jsonPatternCtrl = TextEditingController();
+
   @override
   void initState() {
     super.initState();
 
     if (widget.initialData != null) {
-      // ── EDIT MODE: restore everything from saved data ──────────
       final d = widget.initialData!;
 
       _panelNameCtrl.text =
@@ -61,8 +63,8 @@ class _AddRadioButtonsPanelScreenState
       if (iconStr != null) {
         _panelIcon = iconFromString(iconStr) ?? Icons.widgets_outlined;
       }
-
-      // Restore items list from saved data
+      _jsonPathCtrl.text    = d['jsonPath'] as String? ?? '';
+      _jsonPatternCtrl.text = d['jsonPattern'] as String? ?? '';
       final savedItems = d['items'];
       if (savedItems is List && savedItems.isNotEmpty) {
         for (final item in savedItems) {
@@ -76,12 +78,10 @@ class _AddRadioButtonsPanelScreenState
           });
         }
       } else {
-        // Fallback: at least 2 blank items if saved data had none
         _addItem();
         _addItem();
       }
     } else {
-      // ── CREATE MODE: start with 2 blank items ──────────────────
       _addItem();
       _addItem();
     }
@@ -101,6 +101,8 @@ class _AddRadioButtonsPanelScreenState
       i['label']!.dispose();
       i['payload']!.dispose();
     }
+    _jsonPathCtrl.dispose();
+    _jsonPatternCtrl.dispose();
     super.dispose();
   }
 
@@ -126,6 +128,8 @@ class _AddRadioButtonsPanelScreenState
         'showSentTimestamp': _showSentTimestamp,
         'retain': _retain,
         'qos': _qos,
+        'jsonPath':    _jsonPathCtrl.text.trim(),
+        'jsonPattern': _jsonPatternCtrl.text.trim(),
       });
     }
   }
@@ -396,6 +400,10 @@ class _AddRadioButtonsPanelScreenState
               _payloadIsJson,
                   (v) => setState(() => _payloadIsJson = v),
             ),
+            if (_payloadIsJson) ...[
+              _fieldRow(l.jsonPath, _jsonPathCtrl, showHelp: true),
+              _fieldRow(l.jsonPattern, _jsonPatternCtrl, showHelp: true),
+            ],
             _checkRow(
               l.showReceivedTimestamp,
               _showReceivedTimestamp,

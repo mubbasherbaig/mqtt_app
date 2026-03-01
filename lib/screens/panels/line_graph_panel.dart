@@ -23,29 +23,17 @@ class _AddLineGraphPanelScreenState extends State<AddLineGraphPanelScreen> {
 
   IconData _panelIcon = Icons.widgets_outlined;
 
-  bool _disableDashboardPrefix = false;
-  bool _showPlotArea = false;
-  bool _showPointsAndTooltip = false;
-  bool _enableNotification = false;
-  bool _payloadIsJson = false;
+  bool _disableDashboardPrefix = true;
   bool _smoothCurve = false;
   bool _retain = false;
   String _maxDuration = 'None';
   int _qos = 0;
 
   final List<String> _durations = [
-    'None',
-    '1 min',
-    '5 min',
-    '10 min',
-    '30 min',
-    '1 hour',
-    '6 hours',
-    '1 day',
+    'None', '1 min', '5 min', '10 min', '30 min', '1 hour', '6 hours', '1 day',
   ];
   final List<int> _qosOptions = [0, 1, 2];
 
-  // Graph series - each has topic, label, factor, decimalPrecision, color
   final List<Map<String, dynamic>> _graphs = [];
   final List<Color> _defaultColors = [
     const Color(0xFFEA1111),
@@ -65,15 +53,12 @@ class _AddLineGraphPanelScreenState extends State<AddLineGraphPanelScreen> {
       _unitCtrl.text = d['unit'] as String? ?? '';
       _disableDashboardPrefix = d['disableDashboardPrefix'] == true;
       _smoothCurve = d['smoothCurve'] == true;
-      _showPlotArea = d['showPlotArea'] == true;
-      _showPointsAndTooltip = d['showPointsAndTooltip'] == true;
-      _payloadIsJson = d['payloadIsJson'] == true;
       _retain = d['retain'] == true;
       _maxDuration = d['maxDuration'] as String? ?? 'None';
       _qos = int.tryParse(d['qos']?.toString() ?? '0') ?? 0;
       final iconStr = d['icon'] as String?;
       if (iconStr != null) _panelIcon = iconFromString(iconStr) ?? Icons.widgets_outlined;
-      // Restore graphs
+
       final savedGraphs = d['graphs'];
       if (savedGraphs is List && savedGraphs.isNotEmpty) {
         _graphs.clear();
@@ -87,10 +72,18 @@ class _AddLineGraphPanelScreenState extends State<AddLineGraphPanelScreen> {
             'decimalPrecision': TextEditingController(text: g['decimalPrecision']?.toString() ?? ''),
             'color': colorVal != null ? Color(colorVal) : _defaultColors[i % _defaultColors.length],
             'enableNotif': g['enableNotif'] == true,
+            'showPlotArea': g['showPlotArea'] == true,
+            'showPointsAndTooltip': g['showPointsAndTooltip'] == true,
             'payloadIsJson': g['payloadIsJson'] == true,
+            'jsonPath': TextEditingController(text: g['jsonPath']?.toString() ?? ''),
           });
         }
       }
+    }
+
+    // Auto-add one series if none exist
+    if (_graphs.isEmpty) {
+      _addGraph();
     }
   }
 
@@ -103,7 +96,10 @@ class _AddLineGraphPanelScreenState extends State<AddLineGraphPanelScreen> {
       'decimalPrecision': TextEditingController(),
       'color': _defaultColors[idx % _defaultColors.length],
       'enableNotif': false,
+      'showPlotArea': false,
+      'showPointsAndTooltip': false,
       'payloadIsJson': false,
+      'jsonPath': TextEditingController(text: ''),
     });
   }
 
@@ -117,52 +113,38 @@ class _AddLineGraphPanelScreenState extends State<AddLineGraphPanelScreen> {
       (g['label'] as TextEditingController).dispose();
       (g['factor'] as TextEditingController).dispose();
       (g['decimalPrecision'] as TextEditingController).dispose();
+      (g['jsonPath'] as TextEditingController).dispose();
     }
     super.dispose();
   }
 
   void _pickGraphColor(int idx) {
     final colors = [
-      const Color(0xFFEA1111),
-      Colors.green,
-      const Color(0xFF1E88E5),
-      Colors.orange,
-      Colors.purple,
-      Colors.teal,
-      Colors.pink,
-      Colors.indigo,
+      const Color(0xFFEA1111), Colors.green, const Color(0xFF1E88E5),
+      Colors.orange, Colors.purple, Colors.teal, Colors.pink, Colors.indigo,
     ];
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
         title: const Text('Pick Graph Color'),
         content: Wrap(
-          spacing: 10,
-          runSpacing: 10,
-          children: colors
-              .map(
-                (c) => GestureDetector(
-                  onTap: () {
-                    setState(() => _graphs[idx]['color'] = c);
-                    Navigator.pop(context);
-                  },
-                  child: Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: c,
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: (_graphs[idx]['color'] as Color) == c
-                            ? Colors.black
-                            : Colors.transparent,
-                        width: 3,
-                      ),
-                    ),
-                  ),
+          spacing: 10, runSpacing: 10,
+          children: colors.map((c) => GestureDetector(
+            onTap: () {
+              setState(() => _graphs[idx]['color'] = c);
+              Navigator.pop(context);
+            },
+            child: Container(
+              width: 40, height: 40,
+              decoration: BoxDecoration(
+                color: c, shape: BoxShape.circle,
+                border: Border.all(
+                  color: (_graphs[idx]['color'] as Color) == c ? Colors.black : Colors.transparent,
+                  width: 3,
                 ),
-              )
-              .toList(),
+              ),
+            ),
+          )).toList(),
         ),
       ),
     );
@@ -173,25 +155,23 @@ class _AddLineGraphPanelScreenState extends State<AddLineGraphPanelScreen> {
       Navigator.pop(context, {
         'type': 'Line Graph',
         'label': _panelNameCtrl.text.trim(),
-        'graphs': _graphs
-            .map(
-              (g) => {
-                'topic': (g['topic'] as TextEditingController).text.trim(),
-                'label': (g['label'] as TextEditingController).text.trim(),
-                'icon': iconToString(_panelIcon),
-                'factor': (g['factor'] as TextEditingController).text.trim(),
-                'color': (g['color'] as Color).value.toString(),
-              },
-            )
-            .toList(),
+        'graphs': _graphs.map((g) => {
+          'topic': (g['topic'] as TextEditingController).text.trim(),
+          'label': (g['label'] as TextEditingController).text.trim(),
+          'factor': (g['factor'] as TextEditingController).text.trim(),
+          'decimalPrecision': (g['decimalPrecision'] as TextEditingController).text.trim(),
+          'color': (g['color'] as Color).value.toString(),
+          'enableNotif': g['enableNotif'] as bool,
+          'showPlotArea': g['showPlotArea'] as bool,
+          'showPointsAndTooltip': g['showPointsAndTooltip'] as bool,
+          'payloadIsJson': g['payloadIsJson'] as bool,
+          'jsonPath': (g['jsonPath'] as TextEditingController).text.trim(),
+        }).toList(),
         'smoothCurve': _smoothCurve,
         'maxPersistence': _maxPersistenceCtrl.text.trim(),
         'maxDuration': _maxDuration,
         'qos': _qos,
         'disableDashboardPrefix': _disableDashboardPrefix,
-        'showPlotArea': _showPlotArea,
-        'showPointsAndTooltip': _showPointsAndTooltip,
-        'payloadIsJson': _payloadIsJson,
         'retain': _retain,
         'unit': _unitCtrl.text.trim(),
         'icon': iconToString(_panelIcon),
@@ -199,25 +179,16 @@ class _AddLineGraphPanelScreenState extends State<AddLineGraphPanelScreen> {
     }
   }
 
-  Widget _d() =>
-      const Divider(height: 1, thickness: 1, color: Color(0xFFE0E0E0));
+  Widget _d() => const Divider(height: 1, thickness: 1, color: Color(0xFFE0E0E0));
 
   Widget _help() => Container(
-    width: 28,
-    height: 28,
-    decoration: const BoxDecoration(
-      color: Color(0xFF1E88E5),
-      shape: BoxShape.circle,
-    ),
+    width: 28, height: 28,
+    decoration: const BoxDecoration(color: Color(0xFF1E88E5), shape: BoxShape.circle),
     child: const Icon(Icons.question_mark, color: Colors.white, size: 15),
   );
 
-  Widget _field(
-    String label,
-    TextEditingController ctrl, {
-    bool req = false,
-    bool showHelp = false,
-    String? Function(String?)? val,
+  Widget _field(String label, TextEditingController ctrl, {
+    bool req = false, bool showHelp = false, String? Function(String?)? val,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -234,52 +205,28 @@ class _AddLineGraphPanelScreenState extends State<AddLineGraphPanelScreen> {
                     RichText(
                       text: TextSpan(
                         text: label,
-                        style: const TextStyle(
-                          fontSize: 15,
-                          color: Colors.black87,
-                        ),
-                        children: req
-                            ? const [
-                                TextSpan(
-                                  text: ' *',
-                                  style: TextStyle(color: Colors.red),
-                                ),
-                              ]
-                            : [],
+                        style: const TextStyle(fontSize: 15, color: Colors.black87),
+                        children: req ? const [TextSpan(text: ' *', style: TextStyle(color: Colors.red))] : [],
                       ),
                     ),
                     TextFormField(
                       controller: ctrl,
                       validator: val,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        color: Colors.black87,
-                      ),
+                      style: const TextStyle(fontSize: 15, color: Colors.black87),
                       decoration: const InputDecoration(
                         isDense: true,
                         contentPadding: EdgeInsets.only(top: 6, bottom: 8),
-                        enabledBorder: UnderlineInputBorder(
-                          borderSide: BorderSide(color: Colors.black26),
-                        ),
-                        focusedBorder: UnderlineInputBorder(
-                          borderSide: BorderSide(color: Color(0xFF1E88E5)),
-                        ),
-                        errorBorder: UnderlineInputBorder(
-                          borderSide: BorderSide(color: Colors.red),
-                        ),
-                        focusedErrorBorder: UnderlineInputBorder(
-                          borderSide: BorderSide(color: Colors.red),
-                        ),
+                        enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.black26)),
+                        focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Color(0xFF1E88E5))),
+                        errorBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.red)),
+                        focusedErrorBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.red)),
                       ),
                     ),
                   ],
                 ),
               ),
               if (showHelp)
-                Padding(
-                  padding: const EdgeInsets.only(left: 10, bottom: 8),
-                  child: _help(),
-                ),
+                Padding(padding: const EdgeInsets.only(left: 10, bottom: 8), child: _help()),
             ],
           ),
         ),
@@ -288,12 +235,8 @@ class _AddLineGraphPanelScreenState extends State<AddLineGraphPanelScreen> {
     );
   }
 
-  Widget _check(
-    String label,
-    bool value,
-    ValueChanged<bool> onChanged, {
-    bool help = false,
-    bool enabled = true,
+  Widget _check(String label, bool value, ValueChanged<bool> onChanged, {
+    bool help = false, bool enabled = true,
   }) {
     return Column(
       children: [
@@ -304,30 +247,18 @@ class _AddLineGraphPanelScreenState extends State<AddLineGraphPanelScreen> {
             child: Row(
               children: [
                 SizedBox(
-                  width: 28,
-                  height: 28,
+                  width: 28, height: 28,
                   child: Checkbox(
                     value: value,
                     onChanged: enabled ? (v) => onChanged(v ?? false) : null,
                     materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    side: BorderSide(
-                      color: enabled ? Colors.black54 : Colors.black26,
-                      width: 1.5,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(2),
-                    ),
+                    side: BorderSide(color: enabled ? Colors.black54 : Colors.black26, width: 1.5),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(2)),
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: Text(
-                    label,
-                    style: TextStyle(
-                      fontSize: 15,
-                      color: enabled ? Colors.black87 : Colors.black38,
-                    ),
-                  ),
+                  child: Text(label, style: TextStyle(fontSize: 15, color: enabled ? Colors.black87 : Colors.black38)),
                 ),
                 if (help) _help(),
               ],
@@ -339,7 +270,6 @@ class _AddLineGraphPanelScreenState extends State<AddLineGraphPanelScreen> {
     );
   }
 
-  // Graph series block
   Widget _graphBlock(int idx, AppLocalizations l) {
     final g = _graphs[idx];
     final color = g['color'] as Color;
@@ -348,18 +278,33 @@ class _AddLineGraphPanelScreenState extends State<AddLineGraphPanelScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Dynamic header for each series
+        // Series header with delete button
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-          child: Text(
-            '${l.graphSeries} ${idx + 1}',
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF1E88E5),
-            ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '${l.graphSeries} ${idx + 1}',
+                style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1E88E5)),
+              ),
+              if (_graphs.length > 1)
+                IconButton(
+                  icon: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
+                  onPressed: () => setState(() {
+                    (g['topic'] as TextEditingController).dispose();
+                    (g['label'] as TextEditingController).dispose();
+                    (g['factor'] as TextEditingController).dispose();
+                    (g['decimalPrecision'] as TextEditingController).dispose();
+                    (g['jsonPath'] as TextEditingController).dispose();
+                    _graphs.removeAt(idx);
+                  }),
+                ),
+            ],
           ),
         ),
 
+        // Topic
         _field(
           '${l.topicForGraph} ${idx + 1}',
           g['topic'] as TextEditingController,
@@ -367,10 +312,8 @@ class _AddLineGraphPanelScreenState extends State<AddLineGraphPanelScreen> {
           val: (v) => (v == null || v.isEmpty) ? l.required : null,
         ),
 
-        _field(
-          '${l.labelForGraph} ${idx + 1}',
-          g['label'] as TextEditingController,
-        ),
+        // Label
+        _field('${l.labelForGraph} ${idx + 1}', g['label'] as TextEditingController),
 
         // Factor + Decimal precision
         Column(
@@ -385,20 +328,13 @@ class _AddLineGraphPanelScreenState extends State<AddLineGraphPanelScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          l.factor,
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: Colors.black54,
-                          ),
-                        ),
+                        Text(l.factor, style: const TextStyle(fontSize: 13, color: Colors.black54)),
                         TextFormField(
                           controller: g['factor'] as TextEditingController,
                           keyboardType: TextInputType.number,
                           style: const TextStyle(fontSize: 15),
                           decoration: const InputDecoration(
-                            isDense: true,
-                            contentPadding: EdgeInsets.only(top: 4, bottom: 8),
+                            isDense: true, contentPadding: EdgeInsets.only(top: 4, bottom: 8),
                           ),
                         ),
                       ],
@@ -409,21 +345,13 @@ class _AddLineGraphPanelScreenState extends State<AddLineGraphPanelScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          l.decimal,
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: Colors.black54,
-                          ),
-                        ),
+                        Text(l.decimal, style: const TextStyle(fontSize: 13, color: Colors.black54)),
                         TextFormField(
-                          controller:
-                              g['decimalPrecision'] as TextEditingController,
+                          controller: g['decimalPrecision'] as TextEditingController,
                           keyboardType: TextInputType.number,
                           style: const TextStyle(fontSize: 15),
                           decoration: const InputDecoration(
-                            isDense: true,
-                            contentPadding: EdgeInsets.only(top: 4, bottom: 8),
+                            isDense: true, contentPadding: EdgeInsets.only(top: 4, bottom: 8),
                           ),
                         ),
                       ],
@@ -436,7 +364,7 @@ class _AddLineGraphPanelScreenState extends State<AddLineGraphPanelScreen> {
           ],
         ),
 
-        // Graph color row
+        // Graph color
         Column(
           children: [
             Padding(
@@ -446,12 +374,8 @@ class _AddLineGraphPanelScreenState extends State<AddLineGraphPanelScreen> {
                   GestureDetector(
                     onTap: () => _pickGraphColor(idx),
                     child: Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        color: color,
-                        shape: BoxShape.circle,
-                      ),
+                      width: 36, height: 36,
+                      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -459,20 +383,8 @@ class _AddLineGraphPanelScreenState extends State<AddLineGraphPanelScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          l.graphColor,
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: Colors.black54,
-                          ),
-                        ),
-                        Text(
-                          hex,
-                          style: const TextStyle(
-                            fontSize: 15,
-                            color: Colors.black87,
-                          ),
-                        ),
+                        Text(l.graphColor, style: const TextStyle(fontSize: 13, color: Colors.black54)),
+                        Text(hex, style: const TextStyle(fontSize: 15, color: Colors.black87)),
                       ],
                     ),
                   ),
@@ -483,13 +395,42 @@ class _AddLineGraphPanelScreenState extends State<AddLineGraphPanelScreen> {
           ],
         ),
 
+        // Show plot area (per series)
+        _check(
+          l.showPlotArea,
+          g['showPlotArea'] as bool,
+              (v) => setState(() => g['showPlotArea'] = v),
+          help: true,
+        ),
+
+        // Show points and tooltip (per series)
+        _check(
+          l.showPointsAndTooltip,
+          g['showPointsAndTooltip'] as bool,
+              (v) => setState(() => g['showPointsAndTooltip'] = v),
+          help: true,
+        ),
+
+        // Enable notification (per series, disabled)
+        _check(
+          l.enableNotification,
+          g['enableNotif'] as bool,
+              (v) => setState(() => g['enableNotif'] = v),
+          help: true,
+          enabled: false,
+        ),
+
+        // Payload is JSON (per series)
         _check(
           l.payloadIsJson,
           g['payloadIsJson'] as bool,
-          (v) => setState(() => g['payloadIsJson'] = v),
+              (v) => setState(() => g['payloadIsJson'] = v),
         ),
 
-        // Add a small spacer or a subtle background change if you have many series
+        // JsonPath field (only if payloadIsJson)
+        if (g['payloadIsJson'] == true)
+          _field(l.jsonPath, g['jsonPath'] as TextEditingController, showHelp: true),
+
         const SizedBox(height: 8),
       ],
     );
@@ -510,11 +451,7 @@ class _AddLineGraphPanelScreenState extends State<AddLineGraphPanelScreen> {
         ),
         title: Text(
           _isEditing ? l.edit : l.addLineGraphPanel,
-          style: const TextStyle(
-            color: Colors.black,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
+          style: const TextStyle(color: Colors.black, fontSize: 18, fontWeight: FontWeight.bold),
         ),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
@@ -525,56 +462,44 @@ class _AddLineGraphPanelScreenState extends State<AddLineGraphPanelScreen> {
         key: _formKey,
         child: ListView(
           children: [
+            // Panel name
             _field(
-              l.panelName,
-              _panelNameCtrl,
+              l.panelName, _panelNameCtrl,
               req: true,
               val: (v) => (v == null || v.isEmpty) ? l.required : null,
             ),
+
+            // Disable dashboard prefix
             _check(
               l.disableDashboardPrefix,
               _disableDashboardPrefix,
-              (v) => setState(() => _disableDashboardPrefix = v),
+                  (v) => setState(() => _disableDashboardPrefix = v),
             ),
+
+            // Panel icon
             PanelIconPickerRow(
               selectedIcon: _panelIcon,
               onChanged: (icon) => setState(() => _panelIcon = icon),
             ),
-            // Localized Graph Series Blocks
+
+            // Graph series blocks
             ...List.generate(_graphs.length, (i) => _graphBlock(i, l)),
 
             // Add more graph series
             Column(
               children: [
                 Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 14,
-                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        l.addMoreGraph,
-                        style: const TextStyle(
-                          fontSize: 15,
-                          color: Colors.black87,
-                        ),
-                      ),
+                      Text(l.addMoreGraph, style: const TextStyle(fontSize: 15, color: Colors.black87)),
                       GestureDetector(
                         onTap: () => setState(() => _addGraph()),
                         child: Container(
-                          width: 44,
-                          height: 44,
-                          decoration: const BoxDecoration(
-                            color: Colors.grey,
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.add,
-                            color: Colors.white,
-                            size: 26,
-                          ),
+                          width: 44, height: 44,
+                          decoration: const BoxDecoration(color: Colors.grey, shape: BoxShape.circle),
+                          child: const Icon(Icons.add, color: Colors.white, size: 26),
                         ),
                       ),
                     ],
@@ -584,14 +509,13 @@ class _AddLineGraphPanelScreenState extends State<AddLineGraphPanelScreen> {
               ],
             ),
 
-            _check(
-              l.smoothCurve,
-              _smoothCurve,
-              (v) => setState(() => _smoothCurve = v),
-              help: true,
-            ),
+            // Smooth curve (global)
+            _check(l.smoothCurve, _smoothCurve, (v) => setState(() => _smoothCurve = v), help: true),
 
-            // Max Persistence Field
+            // Unit field
+            _field(l.unit, _unitCtrl),
+
+            // Max Persistence
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -604,13 +528,7 @@ class _AddLineGraphPanelScreenState extends State<AddLineGraphPanelScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              l.maxPersistence,
-                              style: const TextStyle(
-                                fontSize: 13,
-                                color: Colors.black54,
-                              ),
-                            ),
+                            Text(l.maxPersistence, style: const TextStyle(fontSize: 13, color: Colors.black54)),
                             TextFormField(
                               controller: _maxPersistenceCtrl,
                               keyboardType: TextInputType.number,
@@ -619,10 +537,7 @@ class _AddLineGraphPanelScreenState extends State<AddLineGraphPanelScreen> {
                           ],
                         ),
                       ),
-                      Padding(
-                        padding: const EdgeInsets.only(left: 10, bottom: 8),
-                        child: _help(),
-                      ),
+                      Padding(padding: const EdgeInsets.only(left: 10, bottom: 8), child: _help()),
                     ],
                   ),
                 ),
@@ -630,7 +545,7 @@ class _AddLineGraphPanelScreenState extends State<AddLineGraphPanelScreen> {
               ],
             ),
 
-            // Max Duration Dropdown
+            // Max Duration
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -642,33 +557,16 @@ class _AddLineGraphPanelScreenState extends State<AddLineGraphPanelScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              l.maxDuration,
-                              style: const TextStyle(
-                                fontSize: 13,
-                                color: Colors.black54,
-                              ),
-                            ),
+                            Text(l.maxDuration, style: const TextStyle(fontSize: 13, color: Colors.black54)),
                             DropdownButtonFormField<String>(
                               value: _maxDuration,
-                              items: _durations
-                                  .map(
-                                    (d) => DropdownMenuItem(
-                                      value: d,
-                                      child: Text(d),
-                                    ),
-                                  )
-                                  .toList(),
-                              onChanged: (v) =>
-                                  setState(() => _maxDuration = v!),
+                              items: _durations.map((d) => DropdownMenuItem(value: d, child: Text(d))).toList(),
+                              onChanged: (v) => setState(() => _maxDuration = v!),
                             ),
                           ],
                         ),
                       ),
-                      Padding(
-                        padding: const EdgeInsets.only(left: 10, bottom: 8),
-                        child: _help(),
-                      ),
+                      Padding(padding: const EdgeInsets.only(left: 10, bottom: 8), child: _help()),
                     ],
                   ),
                 ),
@@ -676,14 +574,11 @@ class _AddLineGraphPanelScreenState extends State<AddLineGraphPanelScreen> {
               ],
             ),
 
-            // Retain & QoS Row
+            // Retain & QoS
             Column(
               children: [
                 Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   child: Row(
                     children: [
                       Checkbox(
@@ -696,12 +591,7 @@ class _AddLineGraphPanelScreenState extends State<AddLineGraphPanelScreen> {
                       const SizedBox(width: 8),
                       DropdownButton<int>(
                         value: _qos,
-                        items: _qosOptions
-                            .map(
-                              (q) =>
-                                  DropdownMenuItem(value: q, child: Text('$q')),
-                            )
-                            .toList(),
+                        items: _qosOptions.map((q) => DropdownMenuItem(value: q, child: Text('$q'))).toList(),
                         onChanged: (v) => setState(() => _qos = v!),
                       ),
                     ],
@@ -718,8 +608,7 @@ class _AddLineGraphPanelScreenState extends State<AddLineGraphPanelScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   SizedBox(
-                    width: 130,
-                    height: 44,
+                    width: 130, height: 44,
                     child: OutlinedButton(
                       onPressed: () => Navigator.pop(context),
                       child: Text(l.cancel),
@@ -727,12 +616,9 @@ class _AddLineGraphPanelScreenState extends State<AddLineGraphPanelScreen> {
                   ),
                   const SizedBox(width: 16),
                   SizedBox(
-                    width: 130,
-                    height: 44,
+                    width: 130, height: 44,
                     child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF1565C0),
-                      ),
+                      style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1565C0)),
                       onPressed: _create,
                       child: Text(
                         _isEditing ? l.save : l.create,

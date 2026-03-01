@@ -20,7 +20,7 @@ class _AddBarGraphPanelScreenState extends State<AddBarGraphPanelScreen> {
 
   bool get _isEditing => widget.initialData != null;
 
-  bool _disableDashboardPrefix = false;
+  bool _disableDashboardPrefix = true;
   bool _defineRange = false;
   String _orientation = 'Vertical';
   int _qos = 0;
@@ -64,6 +64,7 @@ class _AddBarGraphPanelScreenState extends State<AddBarGraphPanelScreen> {
             'color': colorVal != null ? Color(colorVal) : _defaultColors[_bars.length % _defaultColors.length],
             'enableNotif': b['enableNotif'] == true,
             'payloadIsJson': b['payloadIsJson'] == true,
+            'jsonPath': TextEditingController(text: b['jsonPath']?.toString() ?? ''),
           });
         }
       }
@@ -80,6 +81,7 @@ class _AddBarGraphPanelScreenState extends State<AddBarGraphPanelScreen> {
       'color': _defaultColors[idx % _defaultColors.length],
       'enableNotif': false,
       'payloadIsJson': false,
+      'jsonPath': TextEditingController(text: ''),
     });
   }
 
@@ -92,6 +94,7 @@ class _AddBarGraphPanelScreenState extends State<AddBarGraphPanelScreen> {
       (b['label'] as TextEditingController).dispose();
       (b['factor'] as TextEditingController).dispose();
       (b['decimalPrecision'] as TextEditingController).dispose();
+      (b['jsonPath'] as TextEditingController).dispose();
     }
     super.dispose();
   }
@@ -156,6 +159,8 @@ class _AddBarGraphPanelScreenState extends State<AddBarGraphPanelScreen> {
                 'label': (b['label'] as TextEditingController).text.trim(),
                 'factor': (b['factor'] as TextEditingController).text.trim(),
                 'color': (b['color'] as Color).value.toString(),
+                'payloadIsJson': b['payloadIsJson'] as bool,
+                'jsonPath': (b['jsonPath'] as TextEditingController).text.trim(),
               },
             )
             .toList(),
@@ -468,6 +473,8 @@ class _AddBarGraphPanelScreenState extends State<AddBarGraphPanelScreen> {
           b['payloadIsJson'] as bool,
           (v) => setState(() => b['payloadIsJson'] = v),
         ),
+        if (b['payloadIsJson'] == true)
+          _fieldRow(l.jsonPath, b['jsonPath'] as TextEditingController, showHelp: true),
       ],
     );
   }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../services/mqtt_service.dart';
+import '../../utils/json_utils.dart';
 
 class LiveBarcodeScannerPanel extends StatefulWidget {
   final Map<String, dynamic> panel;
@@ -28,7 +29,6 @@ class _LiveBarcodeScannerPanelState extends State<LiveBarcodeScannerPanel> {
 
   bool get _retain => widget.panel['retain'] == true;
 
-  // Simulate scan with text input (real barcode scanner needs mobile_scanner package)
   void _simulateScan() {
     showDialog(context: context, builder: (_) {
       final ctrl = TextEditingController();
@@ -41,7 +41,9 @@ class _LiveBarcodeScannerPanelState extends State<LiveBarcodeScannerPanel> {
             final val = ctrl.text.trim();
             Navigator.pop(context);
             if (val.isNotEmpty && widget.mqtt.isConnected) {
-              widget.mqtt.publish(widget.topic, val, qos: widget.qos, retain: _retain);
+              final jsonPattern = widget.panel['jsonPattern'] as String? ?? '';
+              final toSend = buildJsonPayload(val, jsonPattern);
+              widget.mqtt.publish(widget.topic, toSend, qos: widget.qos, retain: _retain);
               setState(() { _lastScanned = val; _sent = true; });
               Future.delayed(const Duration(seconds: 2), () { if (mounted) setState(() => _sent = false); });
             }

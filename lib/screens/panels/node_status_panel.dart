@@ -26,7 +26,7 @@ class _AddNodeStatusPanelScreenState extends State<AddNodeStatusPanelScreen> {
 
   IconData _panelIcon = Icons.widgets_outlined;
 
-  bool _disableDashboardPrefix = false;
+  bool _disableDashboardPrefix = true;
   bool _autoSyncOnLoad = false;
   bool _enableNotification = false;
   bool _payloadIsJson = false;
@@ -38,6 +38,7 @@ class _AddNodeStatusPanelScreenState extends State<AddNodeStatusPanelScreen> {
   Color _offlineIconColor = const Color(0xFF9E9E9E);
   int _qos = 0;
   final List<int> _qosOptions = [0, 1, 2];
+  final _jsonPathCtrl    = TextEditingController();
 
   @override
   void initState() {
@@ -63,6 +64,7 @@ class _AddNodeStatusPanelScreenState extends State<AddNodeStatusPanelScreen> {
       if (offlineColorVal != null) _offlineIconColor = Color(offlineColorVal);
       final iconStr = d['icon'] as String?;
       if (iconStr != null) _panelIcon = iconFromString(iconStr) ?? Icons.widgets_outlined;
+      _jsonPathCtrl.text    = d['jsonPath'] as String? ?? '';
     }
   }
 
@@ -74,6 +76,7 @@ class _AddNodeStatusPanelScreenState extends State<AddNodeStatusPanelScreen> {
     _payloadSyncRequestCtrl.dispose();
     _payloadOnlineCtrl.dispose();
     _payloadOfflineCtrl.dispose();
+    _jsonPathCtrl.dispose();
     super.dispose();
   }
 
@@ -98,6 +101,7 @@ class _AddNodeStatusPanelScreenState extends State<AddNodeStatusPanelScreen> {
         'showSentTimestamp': _showSentTimestamp,
         'retain': _retain,
         'qos': _qos,
+        'jsonPath':    _jsonPathCtrl.text.trim(),
       });
     }
   }
@@ -465,6 +469,9 @@ class _AddNodeStatusPanelScreenState extends State<AddNodeStatusPanelScreen> {
               _payloadIsJson,
               (v) => setState(() => _payloadIsJson = v),
             ),
+            if (_payloadIsJson) ...[
+              _fieldRow(l.jsonPath, _jsonPathCtrl, showHelp: true),
+            ],
             _checkRow(
               l.showReceivedTimestamp,
               _showReceivedTimestamp,

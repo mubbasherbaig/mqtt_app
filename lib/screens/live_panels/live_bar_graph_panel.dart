@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../services/mqtt_service.dart';
+import '../../utils/json_utils.dart';
 
 class LiveBarGraphPanel extends StatefulWidget {
   final Map<String, dynamic> panel;
@@ -23,7 +24,8 @@ class _LiveBarGraphPanelState extends State<LiveBarGraphPanel> {
   String _topic(String raw) {
     final disable = widget.panel['disableDashboardPrefix'] == true;
     if (disable || widget.dashboardPrefix.isEmpty) return raw;
-    return '${widget.dashboardPrefix}$raw';
+    final cleanRaw = raw.startsWith('/') ? raw.substring(1) : raw;
+    return '${widget.dashboardPrefix}$cleanRaw';
   }
 
   @override
@@ -36,7 +38,9 @@ class _LiveBarGraphPanelState extends State<LiveBarGraphPanel> {
       if (rawTopic.isEmpty) { _unsubs.add(null); continue; }
       final factor = double.tryParse(b['factor']?.toString() ?? '1') ?? 1;
       _unsubs.add(widget.mqtt.subscribe(_topic(rawTopic), (payload) {
-        final v = double.tryParse(payload);
+        final jsonPath = b['jsonPath']?.toString() ?? '';
+        final extracted = extractJsonValue(payload, jsonPath);
+        final v = double.tryParse(extracted);
         if (v == null || !mounted) return;
         setState(() => _values[i] = v * factor);
       }));

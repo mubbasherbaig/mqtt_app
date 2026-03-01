@@ -19,7 +19,7 @@ class _AddChartPanelScreenState extends State<AddChartPanelScreen> {
   final _panelNameCtrl = TextEditingController();
   final _unitCtrl = TextEditingController();
   IconData _panelIcon = Icons.widgets_outlined;
-  bool _disableDashboardPrefix = false;
+  bool _disableDashboardPrefix = true;
   String _chartType = 'Pie chart';
   int _qos = 0;
 
@@ -74,6 +74,7 @@ class _AddChartPanelScreenState extends State<AddChartPanelScreen> {
                 ? Color(colorVal)
                 : _defaultColors[i % _defaultColors.length],
             'payloadIsJson': item['payloadIsJson'] == true,
+            'jsonPath': TextEditingController(text: item['jsonPath']?.toString() ?? ''),
           });
         }
       }
@@ -90,6 +91,7 @@ class _AddChartPanelScreenState extends State<AddChartPanelScreen> {
         'decimalPrecision': TextEditingController(text: '0'),
         'color': _defaultColors[idx % _defaultColors.length],
         'payloadIsJson': false,
+        'jsonPath': TextEditingController(text: ''),
       });
     });
   }
@@ -103,6 +105,7 @@ class _AddChartPanelScreenState extends State<AddChartPanelScreen> {
       (item['label'] as TextEditingController).dispose();
       (item['factor'] as TextEditingController).dispose();
       (item['decimalPrecision'] as TextEditingController).dispose();
+      (item['jsonPath'] as TextEditingController).dispose();
     }
     super.dispose();
   }
@@ -174,6 +177,7 @@ class _AddChartPanelScreenState extends State<AddChartPanelScreen> {
                         .trim(),
                 'color': (i['color'] as Color).value.toString(),
                 'payloadIsJson': i['payloadIsJson'],
+                'jsonPath': (i['jsonPath'] as TextEditingController).text.trim(),
               },
             )
             .toList(),
@@ -406,6 +410,8 @@ class _AddChartPanelScreenState extends State<AddChartPanelScreen> {
             item['payloadIsJson'] as bool,
             (v) => setState(() => item['payloadIsJson'] = v),
           ),
+          if (item['payloadIsJson'] == true)
+            _field(l.jsonPath, item['jsonPath'] as TextEditingController),
           Container(height: 10, color: Colors.white), // Spacer between items
           _d(),
         ],

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../services/mqtt_service.dart';
+import '../../utils/json_utils.dart';
 
 class LiveTextOutputPanel extends StatefulWidget {
   final Map<String, dynamic> panel;
@@ -43,11 +44,13 @@ class _LiveTextOutputPanelState extends State<LiveTextOutputPanel> {
   void _subscribe() {
     _unsub = widget.mqtt.subscribe(widget.topic, (payload) {
       if (!mounted) return;
+      final jsonPath = widget.panel['jsonPath'] as String? ?? '';
+      final extracted = extractJsonValue(payload, jsonPath);
       setState(() {
-        _value = payload;
+        _value = extracted;
         _lastReceived = DateTime.now();
         if (_showHistory) {
-          _history.insert(0, payload);
+          _history.insert(0, extracted);
           if (_history.length > 50) _history.removeLast();
         }
       });

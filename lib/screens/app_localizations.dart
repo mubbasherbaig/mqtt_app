@@ -261,6 +261,9 @@ class AppLocalizations {
   String get dashboardSettings => get('dashboardSettings');
 
   String get useIconSwitch => get('useIconSwitch');
+
+  String get jsonPath    => get('jsonPath');
+  String get jsonPattern => get('jsonPattern');
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -507,6 +510,9 @@ const Map<String, String> _en = {
   'dashboardSettings': 'Dashboard',
 
   'useIconSwitch': 'Use icon switch',
+
+  'jsonPath': 'JsonPath for subscribe',
+  'jsonPattern': 'JSON pattern for publish',
 };
 
 // ─────────────────────────────────────────────────────────────
@@ -753,4 +759,7 @@ const Map<String, String> _it = {
   'dashboardSettings': 'Dashboard',
 
   'useIconSwitch': 'Usa icona interruttore',
+
+  'jsonPath': 'JsonPath per sottoscrizione',
+  'jsonPattern': 'Pattern JSON per pubblicazione',
 };

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../services/mqtt_service.dart';
+import '../../utils/json_utils.dart';
 
 class LiveRadioButtonsPanel extends StatefulWidget {
   final Map<String, dynamic> panel;
@@ -31,8 +32,10 @@ class _LiveRadioButtonsPanelState extends State<LiveRadioButtonsPanel> {
     super.initState();
     _unsub = widget.mqtt.subscribe(_subTopic, (payload) {
       if (!mounted) return;
-      if (_items.any((i) => i['payload']?.toString() == payload)) {
-        setState(() => _selected = payload);
+      final jsonPath = widget.panel['jsonPath'] as String? ?? '';
+      final extracted = extractJsonValue(payload, jsonPath);
+      if (_items.any((i) => i['payload']?.toString() == extracted)) {
+        setState(() => _selected = extracted);
       }
     });
   }
@@ -45,13 +48,14 @@ class _LiveRadioButtonsPanelState extends State<LiveRadioButtonsPanel> {
     final ok = widget.mqtt.isConnected;
     if (_items.isEmpty) return const Center(child: Text('No items', style: TextStyle(color: Colors.black38, fontSize: 12)));
     final retain = widget.panel['retain'] == true;
+    final jsonPattern = widget.panel['jsonPattern'] as String? ?? '';
     return ListView(
       children: _items.map((item) {
         final payload = item['payload']?.toString() ?? '';
         return InkWell(
           onTap: ok ? () {
             setState(() => _selected = payload);
-            widget.mqtt.publish(widget.topic, payload, qos: widget.qos, retain: retain);
+            widget.mqtt.publish(widget.topic, buildJsonPayload(payload, jsonPattern), qos: widget.qos, retain: retain);
           } : null,
           child: Row(children: [
             Radio<String>(
@@ -60,7 +64,7 @@ class _LiveRadioButtonsPanelState extends State<LiveRadioButtonsPanel> {
               onChanged: ok ? (v) {
                 if (v == null) return;
                 setState(() => _selected = v);
-                widget.mqtt.publish(widget.topic, v, qos: widget.qos, retain: retain);
+                widget.mqtt.publish(widget.topic, buildJsonPayload(v, jsonPattern), qos: widget.qos, retain: retain);
               } : null,
             ),
             Expanded(child: Text(item['label']?.toString() ?? payload, style: TextStyle(fontSize: 13, color: ok ? Colors.black87 : Colors.black38))),

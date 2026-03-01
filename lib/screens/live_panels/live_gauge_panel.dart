@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
 import '../../services/mqtt_service.dart';
+import '../../utils/json_utils.dart';
 
 class LiveGaugePanel extends StatefulWidget {
   final Map<String, dynamic> panel;
@@ -43,7 +44,12 @@ class _LiveGaugePanelState extends State<LiveGaugePanel> {
   @override
   void initState() {
     super.initState();
-    _unsub = widget.mqtt.subscribe(widget.topic, (p) { if (mounted) setState(() => _lastPayload = p); });
+    _unsub = widget.mqtt.subscribe(widget.topic, (payload) {
+      if (!mounted) return;
+      final jsonPath = widget.panel['jsonPath'] as String? ?? '';
+      final extracted = extractJsonValue(payload, jsonPath);
+      setState(() => _lastPayload = extracted);
+    });
   }
 
   @override
@@ -77,16 +83,13 @@ class _GaugePainter extends CustomPainter {
     final r = size.width * 0.45;
     final paint = Paint()..style = PaintingStyle.stroke..strokeWidth = 10..strokeCap = StrokeCap.round;
 
-    // Three arc segments
     for (int i = 0; i < 3; i++) {
       paint.color = [c1, c2, c3][i].withValues(alpha: 0.3);
       canvas.drawArc(Rect.fromCircle(center: Offset(cx, cy), radius: r), math.pi + (i * math.pi / 3), math.pi / 3, false, paint);
     }
-    // Active arc
     paint.color = needle;
     canvas.drawArc(Rect.fromCircle(center: Offset(cx, cy), radius: r), math.pi, math.pi * pct, false, paint);
 
-    // Needle
     final angle = math.pi + math.pi * pct;
     final nx = cx + (r * 0.75) * math.cos(angle);
     final ny = cy + (r * 0.75) * math.sin(angle);

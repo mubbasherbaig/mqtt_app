@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../services/mqtt_service.dart';
+import '../../utils/json_utils.dart';
 
 class LiveComboBoxPanel extends StatefulWidget {
   final Map<String, dynamic> panel;
@@ -33,8 +34,10 @@ class _LiveComboBoxPanelState extends State<LiveComboBoxPanel> {
     _retain = widget.panel['retain'] == true;
     _unsub = widget.mqtt.subscribe(_subTopic, (payload) {
       if (!mounted) return;
-      final match = _items.firstWhere((i) => i['payload']?.toString() == payload, orElse: () => {});
-      if (match.isNotEmpty) setState(() => _selected = payload);
+      final jsonPath = widget.panel['jsonPath'] as String? ?? '';
+      final extracted = extractJsonValue(payload, jsonPath);
+      final match = _items.firstWhere((i) => i['payload']?.toString() == extracted, orElse: () => {});
+      if (match.isNotEmpty) setState(() => _selected = extracted);
     });
   }
 
@@ -45,6 +48,7 @@ class _LiveComboBoxPanelState extends State<LiveComboBoxPanel> {
   Widget build(BuildContext context) {
     final ok = widget.mqtt.isConnected;
     if (_items.isEmpty) return const Center(child: Text('No items', style: TextStyle(color: Colors.black38, fontSize: 12)));
+    final jsonPattern = widget.panel['jsonPattern'] as String? ?? '';
 
     return Center(
       child: DropdownButton<String>(
@@ -59,7 +63,7 @@ class _LiveComboBoxPanelState extends State<LiveComboBoxPanel> {
         onChanged: ok ? (val) {
           if (val == null) return;
           setState(() => _selected = val);
-          widget.mqtt.publish(widget.topic, val, qos: widget.qos, retain: _retain);
+          widget.mqtt.publish(widget.topic, buildJsonPayload(val, jsonPattern), qos: widget.qos, retain: _retain);
         } : null,
       ),
     );

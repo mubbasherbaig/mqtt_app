@@ -22,7 +22,7 @@ class _AddDateTimePickerPanelScreenState
 
   final _subscribeTopicCtrl = TextEditingController();
   IconData _panelIcon = Icons.widgets_outlined;
-  bool _disableDashboardPrefix = false;
+  bool _disableDashboardPrefix = true;
   bool _payloadIsJson = false;
   bool _showSentTimestamp = false;
   bool _retain = false;
@@ -36,6 +36,9 @@ class _AddDateTimePickerPanelScreenState
   final List<String> _pickerTypes = ['Date Time', 'Date', 'Time'];
   final List<String> _buttonSizes = ['Small', 'Medium', 'Large'];
   final List<int> _qosOptions = [0, 1, 2];
+
+  final _jsonPathCtrl    = TextEditingController();
+  final _jsonPatternCtrl = TextEditingController();
 
   @override
   void initState() {
@@ -56,6 +59,8 @@ class _AddDateTimePickerPanelScreenState
       final iconStr = d['icon'] as String?;
       if (iconStr != null) _panelIcon = iconFromString(iconStr) ?? Icons.widgets_outlined;
       _subscribeTopicCtrl.text = d['subscribeTopic'] as String? ?? '';
+      _jsonPathCtrl.text    = d['jsonPath'] as String? ?? '';
+      _jsonPatternCtrl.text = d['jsonPattern'] as String? ?? '';
     }
   }
 
@@ -64,6 +69,8 @@ class _AddDateTimePickerPanelScreenState
     _panelNameCtrl.dispose();
     _topicCtrl.dispose();
     _subscribeTopicCtrl.dispose();
+    _jsonPathCtrl.dispose();
+    _jsonPatternCtrl.dispose();
     super.dispose();
   }
 
@@ -130,6 +137,8 @@ class _AddDateTimePickerPanelScreenState
         'payloadIsJson': _payloadIsJson,
         'showSentTimestamp': _showSentTimestamp,
         'subscribeTopic': _subscribeTopicCtrl.text.trim(),
+        'jsonPath':    _jsonPathCtrl.text.trim(),
+        'jsonPattern': _jsonPatternCtrl.text.trim(),
       });
     }
   }
@@ -464,6 +473,10 @@ class _AddDateTimePickerPanelScreenState
               _payloadIsJson,
               (v) => setState(() => _payloadIsJson = v),
             ),
+            if (_payloadIsJson) ...[
+              _field(l.jsonPath, _jsonPathCtrl),
+              _field(l.jsonPattern, _jsonPatternCtrl),
+            ],
             _check(
               l.showSentTimestamp,
               _showSentTimestamp,

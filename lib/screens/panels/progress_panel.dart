@@ -26,7 +26,7 @@ class _AddProgressPanelScreenState extends State<AddProgressPanelScreen> {
 
   IconData _panelIcon = Icons.widgets_outlined;
 
-  bool _disableDashboardPrefix = false;
+  bool _disableDashboardPrefix = true;
   bool _dynamicColor = false;
   bool _enableNotification = false;
   bool _payloadIsJson = false;
@@ -38,6 +38,8 @@ class _AddProgressPanelScreenState extends State<AddProgressPanelScreen> {
 
   final List<String> _progressTypes = ['Horizontal', 'Vertical', 'Circular'];
   final List<int> _qosOptions = [0, 1, 2];
+
+  final _jsonPathCtrl    = TextEditingController();
 
   @override
   void initState() {
@@ -61,6 +63,7 @@ class _AddProgressPanelScreenState extends State<AddProgressPanelScreen> {
       if (colorVal != null) _color = Color(colorVal);
       final iconStr = d['icon'] as String?;
       if (iconStr != null) _panelIcon = iconFromString(iconStr) ?? Icons.widgets_outlined;
+      _jsonPathCtrl.text    = d['jsonPath'] as String? ?? '';
     }
   }
 
@@ -73,6 +76,7 @@ class _AddProgressPanelScreenState extends State<AddProgressPanelScreen> {
     _factorCtrl.dispose();
     _decimalPrecisionCtrl.dispose();
     _unitCtrl.dispose();
+    _jsonPathCtrl.dispose();
     super.dispose();
   }
 
@@ -136,11 +140,12 @@ class _AddProgressPanelScreenState extends State<AddProgressPanelScreen> {
         'icon': iconToString(_panelIcon),
         'color': _color.value.toString(),
         'qos': _qos,
-        // Adding missing toggle logic
         'disableDashboardPrefix': _disableDashboardPrefix,
         'dynamicColor': _dynamicColor,
         'payloadIsJson': _payloadIsJson,
         'showReceivedTimestamp': _showReceivedTimestamp,
+        'jsonPath':    _jsonPathCtrl.text.trim(),
+
       });
     }
   }
@@ -597,6 +602,9 @@ class _AddProgressPanelScreenState extends State<AddProgressPanelScreen> {
               _payloadIsJson,
               (v) => setState(() => _payloadIsJson = v),
             ),
+            if (_payloadIsJson) ...[
+              _fieldRow(l.jsonPath, _jsonPathCtrl, showHelp: true),
+            ],
             _checkRow(
               l.showReceivedTimestamp,
               _showReceivedTimestamp,

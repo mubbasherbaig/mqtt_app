@@ -21,7 +21,7 @@ class _AddComboBoxPanelScreenState extends State<AddComboBoxPanelScreen> {
   final _topicCtrl = TextEditingController();
   final _subscribeTopicCtrl = TextEditingController();
   IconData _panelIcon = Icons.widgets_outlined;
-  bool _disableDashboardPrefix = false;
+  bool _disableDashboardPrefix = true;
   bool _useIconForOption = false;
   bool _enableNotification = false;
   bool _payloadIsJson = false;
@@ -36,6 +36,9 @@ class _AddComboBoxPanelScreenState extends State<AddComboBoxPanelScreen> {
 
   // Dynamic items list — starts with 2 items
   final List<Map<String, TextEditingController>> _items = [];
+
+  final _jsonPathCtrl    = TextEditingController();
+  final _jsonPatternCtrl = TextEditingController();
 
   @override
   void initState() {
@@ -56,7 +59,8 @@ class _AddComboBoxPanelScreenState extends State<AddComboBoxPanelScreen> {
       final iconStr = d['icon'] as String?;
       if (iconStr != null)
         _panelIcon = iconFromString(iconStr) ?? Icons.widgets_outlined;
-      // Restore items
+      _jsonPathCtrl.text    = d['jsonPath'] as String? ?? '';
+      _jsonPatternCtrl.text = d['jsonPattern'] as String? ?? '';
       final savedItems = d['items'];
       if (savedItems is List && savedItems.isNotEmpty) {
         for (final item in savedItems) {
@@ -95,6 +99,8 @@ class _AddComboBoxPanelScreenState extends State<AddComboBoxPanelScreen> {
       item['label']!.dispose();
       item['payload']!.dispose();
     }
+    _jsonPathCtrl.dispose();
+    _jsonPatternCtrl.dispose();
     super.dispose();
   }
 
@@ -121,6 +127,8 @@ class _AddComboBoxPanelScreenState extends State<AddComboBoxPanelScreen> {
         'payloadIsJson': _payloadIsJson,
         'showReceivedTimestamp': _showReceivedTimestamp,
         'showSentTimestamp': _showSentTimestamp,
+        'jsonPath':    _jsonPathCtrl.text.trim(),
+        'jsonPattern': _jsonPatternCtrl.text.trim(),
       });
     }
   }
@@ -395,6 +403,10 @@ class _AddComboBoxPanelScreenState extends State<AddComboBoxPanelScreen> {
               _payloadIsJson,
               (v) => setState(() => _payloadIsJson = v),
             ),
+            if (_payloadIsJson) ...[
+              _fieldRow(l.jsonPath, _jsonPathCtrl, showHelp: true),
+              _fieldRow(l.jsonPattern, _jsonPatternCtrl, showHelp: true),
+            ],
             _checkRow(
               l.showReceivedTimestamp,
               _showReceivedTimestamp,

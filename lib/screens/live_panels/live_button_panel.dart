@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../services/mqtt_service.dart';
+import '../../utils/json_utils.dart';
 
 class LiveButtonPanel extends StatefulWidget {
   final Map<String, dynamic> panel;
@@ -20,13 +21,18 @@ class LiveButtonPanel extends StatefulWidget {
 class _LiveButtonPanelState extends State<LiveButtonPanel> {
   bool _pressed = false;
 
+  String _receivedPayload = '';
+  VoidCallback? _unsub;
+
   Color get _buttonColor {
-    final raw = widget.panel['buttonColor'];
-    if (raw != null) {
-      final parsed = int.tryParse(raw.toString());
-      if (parsed != null) return Color(parsed);
+    // If we have a received payload matching configured payload, use active color
+    // Otherwise dim it to show the OFF state
+    if (_subTopic.isNotEmpty && _receivedPayload.isNotEmpty) {
+      final configPayload = widget.panel['payload'] as String? ?? '';
+      if (_receivedPayload == configPayload) return _activeButtonColor;
+      return _activeButtonColor.withOpacity(0.35);
     }
-    return const Color(0xFF1E88E5);
+    return _activeButtonColor;
   }
 
   String get _payload => widget.panel['payload'] as String? ?? '';
@@ -37,16 +43,51 @@ class _LiveButtonPanelState extends State<LiveButtonPanel> {
       int.tryParse(widget.panel['qos']?.toString() ?? '0') ?? 0;
   bool get _retain => widget.panel['retain'] == true;
 
+  String get _subTopic {
+    final sub = widget.panel['subscribeTopic'] as String? ?? '';
+    return sub.isNotEmpty ? sub : '';
+  }
+
+  Color get _activeButtonColor {
+    final raw = widget.panel['buttonColor'];
+    if (raw != null) {
+      final parsed = int.tryParse(raw.toString());
+      if (parsed != null) return Color(parsed);
+    }
+    return const Color(0xFF1E88E5);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    if (_subTopic.isNotEmpty) {
+      _unsub = widget.mqtt.subscribe(_subTopic, (payload) {
+        if (!mounted) return;
+        final jsonPath = widget.panel['jsonPath'] as String? ?? '';
+        final extracted = extractJsonValue(payload, jsonPath);
+        setState(() => _receivedPayload = extracted);
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _unsub?.call();
+    super.dispose();
+  }
+
   void _publish() {
     if (_noPayload) return;
-    widget.mqtt.publish(widget.topic, _payload,
-        qos: _qos, retain: _retain);
+    final jsonPattern = widget.panel['jsonPattern'] as String? ?? '';
+    final toSend = buildJsonPayload(_payload, jsonPattern);
+    widget.mqtt.publish(widget.topic, toSend, qos: _qos, retain: _retain);
   }
 
   void _publishRelease() {
     if (_releasePayload.isNotEmpty) {
-      widget.mqtt.publish(widget.topic, _releasePayload,
-          qos: _qos, retain: _retain);
+      final jsonPattern = widget.panel['jsonPattern'] as String? ?? '';
+      final toSend = buildJsonPayload(_releasePayload, jsonPattern);
+      widget.mqtt.publish(widget.topic, toSend, qos: _qos, retain: _retain);
     }
   }
 

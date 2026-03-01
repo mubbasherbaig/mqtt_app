@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../services/mqtt_service.dart';
+import '../../utils/json_utils.dart';
 
 class LiveSwitchPanel extends StatefulWidget {
   final Map<String, dynamic> panel;
@@ -57,7 +58,9 @@ class _LiveSwitchPanelState extends State<LiveSwitchPanel> {
   void _subscribe() {
     _unsub = widget.mqtt.subscribe(_subTopic, (payload) {
       if (!mounted) return;
-      setState(() => _isOn = payload == _payloadOn);
+      final jsonPath = widget.panel['jsonPath'] as String? ?? '';
+      final extracted = extractJsonValue(payload, jsonPath);
+      setState(() => _isOn = extracted == _payloadOn);
     });
   }
 
@@ -79,9 +82,10 @@ class _LiveSwitchPanelState extends State<LiveSwitchPanel> {
 
   void _toggle(bool value) {
     if (!widget.mqtt.isConnected) return;
-    final payload = value ? _payloadOn : _payloadOff;
-    widget.mqtt.publish(widget.topic, payload,
-        qos: widget.qos, retain: _retain);
+    final rawPayload = value ? _payloadOn : _payloadOff;
+    final jsonPattern = widget.panel['jsonPattern'] as String? ?? '';
+    final toSend = buildJsonPayload(rawPayload, jsonPattern);
+    widget.mqtt.publish(widget.topic, toSend, qos: widget.qos, retain: _retain);
     setState(() => _isOn = value);
   }
 

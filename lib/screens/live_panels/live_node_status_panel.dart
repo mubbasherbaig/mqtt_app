@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../services/mqtt_service.dart';
+import '../../utils/json_utils.dart';
 
 class LiveNodeStatusPanel extends StatefulWidget {
   final Map<String, dynamic> panel;
@@ -31,8 +32,6 @@ class _LiveNodeStatusPanelState extends State<LiveNodeStatusPanel> {
   void initState() {
     super.initState();
     _subscribe();
-
-    // Auto-sync on load: publish sync request if configured
     if (widget.panel['autoSyncOnLoad'] == true) {
       final syncPayload = widget.panel['payloadSyncRequest'] as String? ?? '';
       if (syncPayload.isNotEmpty && widget.mqtt.isConnected) {
@@ -44,7 +43,9 @@ class _LiveNodeStatusPanelState extends State<LiveNodeStatusPanel> {
   void _subscribe() {
     _unsub = widget.mqtt.subscribe(widget.topic, (payload) {
       if (!mounted) return;
-      setState(() => _lastPayload = payload);
+      final jsonPath = widget.panel['jsonPath'] as String? ?? '';
+      final extracted = extractJsonValue(payload, jsonPath);
+      setState(() => _lastPayload = extracted);
     });
   }
 

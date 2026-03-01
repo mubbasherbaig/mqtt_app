@@ -31,7 +31,7 @@ class _AddGaugePanelScreenState extends State<AddGaugePanelScreen> {
   final _threshold1Ctrl = TextEditingController();
   final _threshold2Ctrl = TextEditingController();
   IconData _panelIcon = Icons.widgets_outlined;
-  bool _disableDashboardPrefix = false;
+  bool _disableDashboardPrefix = true;
   bool _enableNotification = false;
   bool _payloadIsJson = false;
   bool _showReceivedTimestamp = false;
@@ -41,6 +41,7 @@ class _AddGaugePanelScreenState extends State<AddGaugePanelScreen> {
   Color _arcColor3 = Colors.orange;
   int _qos = 0;
   final List<int> _qosOptions = [0, 1, 2];
+  final _jsonPathCtrl    = TextEditingController();
 
   @override
   void initState() {
@@ -70,6 +71,8 @@ class _AddGaugePanelScreenState extends State<AddGaugePanelScreen> {
       final iconStr = d['icon'] as String?;
       if (iconStr != null)
         _panelIcon = iconFromString(iconStr) ?? Icons.widgets_outlined;
+      _jsonPathCtrl.text    = d['jsonPath'] as String? ?? '';
+
     }
   }
 
@@ -84,6 +87,8 @@ class _AddGaugePanelScreenState extends State<AddGaugePanelScreen> {
     _unitCtrl.dispose();
     _threshold1Ctrl.dispose();
     _threshold2Ctrl.dispose();
+    _jsonPathCtrl.dispose();
+
     super.dispose();
   }
 
@@ -153,6 +158,8 @@ class _AddGaugePanelScreenState extends State<AddGaugePanelScreen> {
         'showReceivedTimestamp': _showReceivedTimestamp,
         'threshold1': _threshold1Ctrl.text.trim(),
         'threshold2': _threshold2Ctrl.text.trim(),
+        'jsonPath':    _jsonPathCtrl.text.trim(),
+
       });
     }
   }
@@ -579,6 +586,9 @@ class _AddGaugePanelScreenState extends State<AddGaugePanelScreen> {
               _payloadIsJson,
               (v) => setState(() => _payloadIsJson = v),
             ),
+            if (_payloadIsJson) ...[
+              _fieldRow(l.jsonPath, _jsonPathCtrl, showHelp: true),
+            ],
             _checkRow(
               l.showReceivedTimestamp,
               _showReceivedTimestamp,

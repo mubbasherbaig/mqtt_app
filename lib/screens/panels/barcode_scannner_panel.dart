@@ -21,7 +21,7 @@ class _AddBarcodeScannerPanelScreenState
 
   final _subscribeTopicCtrl = TextEditingController();
   IconData _panelIcon = Icons.widgets_outlined;
-  bool _disableDashboardPrefix = false;
+  bool _disableDashboardPrefix = true;
   bool _payloadIsJson = false;
   bool _showSentTimestamp = false;
   bool _confirmBeforePublish = false;
@@ -34,6 +34,9 @@ class _AddBarcodeScannerPanelScreenState
 
   final List<String> _buttonSizes = ['Small', 'Medium', 'Large'];
   final List<int> _qosOptions = [0, 1, 2];
+
+  final _jsonPathCtrl    = TextEditingController();
+  final _jsonPatternCtrl = TextEditingController();
 
   @override
   void initState() {
@@ -54,6 +57,8 @@ class _AddBarcodeScannerPanelScreenState
       final iconStr = d['icon'] as String?;
       if (iconStr != null) _panelIcon = iconFromString(iconStr) ?? Icons.widgets_outlined;
       _subscribeTopicCtrl.text = d['subscribeTopic'] as String? ?? '';
+      _jsonPathCtrl.text    = d['jsonPath'] as String? ?? '';
+      _jsonPatternCtrl.text = d['jsonPattern'] as String? ?? '';
     }
   }
 
@@ -62,6 +67,8 @@ class _AddBarcodeScannerPanelScreenState
     _panelNameCtrl.dispose();
     _topicCtrl.dispose();
     _subscribeTopicCtrl.dispose();
+    _jsonPathCtrl.dispose();
+    _jsonPatternCtrl.dispose();
     super.dispose();
   }
 
@@ -128,6 +135,8 @@ class _AddBarcodeScannerPanelScreenState
         'showSentTimestamp': _showSentTimestamp,
         'confirmBeforePublish': _confirmBeforePublish,
         'subscribeTopic': _subscribeTopicCtrl.text.trim(),
+        'jsonPath':    _jsonPathCtrl.text.trim(),
+        'jsonPattern': _jsonPatternCtrl.text.trim(),
       });
     }
   }
@@ -416,6 +425,10 @@ class _AddBarcodeScannerPanelScreenState
               _payloadIsJson,
               (v) => setState(() => _payloadIsJson = v),
             ),
+            if (_payloadIsJson) ...[
+              _fieldRow(l.jsonPath, _jsonPathCtrl, showHelp: true),
+              _fieldRow(l.jsonPattern, _jsonPatternCtrl, showHelp: true),
+            ],
             _checkRow(
               l.showSentTimestamp,
               _showSentTimestamp,

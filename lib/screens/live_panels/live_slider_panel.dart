@@ -1,6 +1,6 @@
-
 import 'package:flutter/material.dart';
 import '../../services/mqtt_service.dart';
+import '../../utils/json_utils.dart';
 
 class LiveSliderPanel extends StatefulWidget {
   final Map<String, dynamic> panel;
@@ -52,7 +52,9 @@ class _LiveSliderPanelState extends State<LiveSliderPanel> {
 
   void _subscribe() {
     _unsub = widget.mqtt.subscribe(widget.topic, (payload) {
-      final v = double.tryParse(payload);
+      final jsonPath = widget.panel['jsonPath'] as String? ?? '';
+      final extracted = extractJsonValue(payload, jsonPath);
+      final v = double.tryParse(extracted);
       if (v != null && mounted) {
         setState(() => _value = v.clamp(_min, _max));
       }
@@ -75,10 +77,8 @@ class _LiveSliderPanelState extends State<LiveSliderPanel> {
   }
 
   void _onChange(double v) {
-    // Snap to step
     final snapped = (_step > 0)
-        ? (_min + (((v - _min) / _step).round() * _step))
-        .clamp(_min, _max)
+        ? (_min + (((v - _min) / _step).round() * _step)).clamp(_min, _max)
         : v;
     setState(() => _value = snapped);
   }
@@ -88,8 +88,9 @@ class _LiveSliderPanelState extends State<LiveSliderPanel> {
     final payload = _decimals > 0
         ? _value.toStringAsFixed(_decimals)
         : _value.toInt().toString();
-    widget.mqtt.publish(widget.topic, payload,
-        qos: widget.qos, retain: _retain);
+    final jsonPattern = widget.panel['jsonPattern'] as String? ?? '';
+    final toSend = buildJsonPayload(payload, jsonPattern);
+    widget.mqtt.publish(widget.topic, toSend, qos: widget.qos, retain: _retain);
   }
 
   @override
@@ -103,9 +104,7 @@ class _LiveSliderPanelState extends State<LiveSliderPanel> {
               ? _value.toStringAsFixed(_decimals)
               : _value.toInt().toString(),
           style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87),
+              fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87),
         ),
         const SizedBox(height: 4),
         SliderTheme(
@@ -126,11 +125,9 @@ class _LiveSliderPanelState extends State<LiveSliderPanel> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(_min.toInt().toString(),
-                style:
-                const TextStyle(fontSize: 10, color: Colors.black38)),
+                style: const TextStyle(fontSize: 10, color: Colors.black38)),
             Text(_max.toInt().toString(),
-                style:
-                const TextStyle(fontSize: 10, color: Colors.black38)),
+                style: const TextStyle(fontSize: 10, color: Colors.black38)),
           ],
         ),
       ],

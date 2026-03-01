@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
 import '../../services/mqtt_service.dart';
+import '../../utils/json_utils.dart';
 
 class LiveLineGraphPanel extends StatefulWidget {
   final Map<String, dynamic> panel;
@@ -12,7 +13,6 @@ class LiveLineGraphPanel extends StatefulWidget {
 }
 
 class _LiveLineGraphPanelState extends State<LiveLineGraphPanel> {
-  // Each series: list of (time, value) points
   final List<List<double>> _seriesData = [];
   final List<VoidCallback?> _unsubs = [];
 
@@ -27,7 +27,8 @@ class _LiveLineGraphPanelState extends State<LiveLineGraphPanel> {
   String _topic(String raw) {
     final disable = widget.panel['disableDashboardPrefix'] == true;
     if (disable || widget.dashboardPrefix.isEmpty) return raw;
-    return '${widget.dashboardPrefix}$raw';
+    final cleanRaw = raw.startsWith('/') ? raw.substring(1) : raw;
+    return '${widget.dashboardPrefix}$cleanRaw';
   }
 
   @override
@@ -41,7 +42,9 @@ class _LiveLineGraphPanelState extends State<LiveLineGraphPanel> {
       final topic = _topic(rawTopic);
       final factor = double.tryParse(g['factor']?.toString() ?? '1') ?? 1;
       _unsubs.add(widget.mqtt.subscribe(topic, (payload) {
-        final v = double.tryParse(payload);
+        final jsonPath = g['jsonPath']?.toString() ?? '';
+        final extracted = extractJsonValue(payload, jsonPath);
+        final v = double.tryParse(extracted);
         if (v == null || !mounted) return;
         setState(() {
           _seriesData[i].add(v * factor);
@@ -74,7 +77,6 @@ class _LinePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    // Draw axes
     final axisPaint = Paint()..color = Colors.black26..strokeWidth = 1;
     canvas.drawLine(Offset(24, 4), Offset(24, size.height - 16), axisPaint);
     canvas.drawLine(Offset(24, size.height - 16), Offset(size.width - 4, size.height - 16), axisPaint);

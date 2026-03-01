@@ -25,7 +25,7 @@ class _AddLedIndicatorPanelScreenState
 
   IconData _panelIcon = Icons.widgets_outlined;
 
-  bool _disableDashboardPrefix = false;
+  bool _disableDashboardPrefix = true;
   bool _payloadIsJson = false;
   bool _showReceivedTimestamp = false;
 
@@ -36,6 +36,8 @@ class _AddLedIndicatorPanelScreenState
 
   final List<String> _iconSizes = ['Small', 'Medium', 'Large'];
   final List<int> _qosOptions = [0, 1, 2];
+
+  final _jsonPathCtrl    = TextEditingController();
 
   @override
   void initState() {
@@ -57,6 +59,8 @@ class _AddLedIndicatorPanelScreenState
       if (offColorVal != null) _offIconColor = Color(offColorVal);
       final iconStr = d['icon'] as String?;
       if (iconStr != null) _panelIcon = iconFromString(iconStr) ?? Icons.widgets_outlined;
+      _jsonPathCtrl.text    = d['jsonPath'] as String? ?? '';
+
     }
   }
 
@@ -66,6 +70,8 @@ class _AddLedIndicatorPanelScreenState
     _topicCtrl.dispose();
     _payloadOnCtrl.dispose();
     _payloadOffCtrl.dispose();
+    _jsonPathCtrl.dispose();
+
     super.dispose();
   }
 
@@ -137,6 +143,8 @@ class _AddLedIndicatorPanelScreenState
         'disableDashboardPrefix': _disableDashboardPrefix,
         'payloadIsJson': _payloadIsJson,
         'showReceivedTimestamp': _showReceivedTimestamp,
+        'jsonPath':    _jsonPathCtrl.text.trim(),
+
       });
     }
   }
@@ -413,6 +421,9 @@ class _AddLedIndicatorPanelScreenState
               _payloadIsJson,
               (v) => setState(() => _payloadIsJson = v),
             ),
+            if (_payloadIsJson) ...[
+              _fieldRow(l.jsonPath, _jsonPathCtrl),
+            ],
             _checkRow(
               l.showReceivedTimestamp,
               _showReceivedTimestamp,
