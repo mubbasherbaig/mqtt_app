@@ -1,13 +1,21 @@
 import 'package:flutter/material.dart';
 import '../../services/mqtt_service.dart';
+import '../../services/notification_service.dart';
 import '../../utils/json_utils.dart';
+import '../widgets/icon_picker_sheet.dart';
 
 class LiveComboBoxPanel extends StatefulWidget {
   final Map<String, dynamic> panel;
   final String topic;
   final MqttService mqtt;
   final int qos;
-  const LiveComboBoxPanel({super.key, required this.panel, required this.topic, required this.mqtt, required this.qos});
+  const LiveComboBoxPanel({
+    super.key,
+    required this.panel,
+    required this.topic,
+    required this.mqtt,
+    required this.qos,
+  });
   @override
   State<LiveComboBoxPanel> createState() => _LiveComboBoxPanelState();
 }
@@ -15,7 +23,20 @@ class LiveComboBoxPanel extends StatefulWidget {
 class _LiveComboBoxPanelState extends State<LiveComboBoxPanel> {
   String? _selected;
   VoidCallback? _unsub;
-  bool _retain = false;
+  DateTime? _lastReceivedTime;
+  DateTime? _lastSentTime;
+
+  bool get _retain => widget.panel['retain'] == true;
+  bool get _useIconForOption => widget.panel['useIconForOption'] == true;
+  bool get _showReceivedTimestamp => widget.panel['showReceivedTimestamp'] == true;
+  bool get _showSentTimestamp => widget.panel['showSentTimestamp'] == true;
+
+  bool get _enableNotification => widget.panel['enableNotification'] == true;
+
+  String get _panelName =>
+      widget.panel['label'] as String? ??
+          widget.panel['panelName'] as String? ??
+          'Combo Box';
 
   List<Map<String, dynamic>> get _items {
     final raw = widget.panel['items'];
@@ -28,44 +49,118 @@ class _LiveComboBoxPanelState extends State<LiveComboBoxPanel> {
     return (sub != null && sub.isNotEmpty) ? sub : widget.topic;
   }
 
+  String _formatTime(DateTime t) =>
+      '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}:${t.second.toString().padLeft(2, '0')}';
+
   @override
   void initState() {
     super.initState();
-    _retain = widget.panel['retain'] == true;
     _unsub = widget.mqtt.subscribe(_subTopic, (payload) {
       if (!mounted) return;
       final jsonPath = widget.panel['jsonPath'] as String? ?? '';
       final extracted = extractJsonValue(payload, jsonPath);
-      final match = _items.firstWhere((i) => i['payload']?.toString() == extracted, orElse: () => {});
-      if (match.isNotEmpty) setState(() => _selected = extracted);
+      final match = _items.firstWhere(
+            (i) => i['payload']?.toString() == extracted,
+        orElse: () => {},
+      );
+      if (match.isNotEmpty) {
+        setState(() {
+          _selected = extracted;
+          if (_showReceivedTimestamp) _lastReceivedTime = DateTime.now();
+        });
+        if (_enableNotification) {
+          final label = match['label']?.toString() ?? extracted;
+          NotificationService.show(
+            title: _panelName,
+            body: 'Selection changed to: $label',
+          );
+        }
+      }
     });
   }
 
   @override
-  void dispose() { _unsub?.call(); super.dispose(); }
+  void dispose() {
+    _unsub?.call();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final ok = widget.mqtt.isConnected;
-    if (_items.isEmpty) return const Center(child: Text('No items', style: TextStyle(color: Colors.black38, fontSize: 12)));
+    if (_items.isEmpty) {
+      return const Center(
+        child: Text('No items', style: TextStyle(color: Colors.black38, fontSize: 12)),
+      );
+    }
     final jsonPattern = widget.panel['jsonPattern'] as String? ?? '';
 
-    return Center(
-      child: DropdownButton<String>(
-        value: _selected,
-        hint: const Text('Select…', style: TextStyle(fontSize: 13)),
-        isExpanded: true,
-        underline: Container(height: 1, color: const Color(0xFF1E88E5)),
-        items: _items.map((item) => DropdownMenuItem<String>(
-          value: item['payload']?.toString() ?? '',
-          child: Text(item['label']?.toString() ?? item['payload']?.toString() ?? '', style: const TextStyle(fontSize: 13)),
-        )).toList(),
-        onChanged: ok ? (val) {
-          if (val == null) return;
-          setState(() => _selected = val);
-          widget.mqtt.publish(widget.topic, buildJsonPayload(val, jsonPattern), qos: widget.qos, retain: _retain);
-        } : null,
-      ),
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        DropdownButton<String>(
+          value: _selected,
+          hint: const Text('Select…', style: TextStyle(fontSize: 13)),
+          isExpanded: true,
+          underline: Container(height: 1, color: const Color(0xFF1E88E5)),
+          items: _items.map((item) {
+            final payload = item['payload']?.toString() ?? '';
+            final label = item['label']?.toString() ?? payload;
+            // useIconForOption: items may carry an 'icon' string key
+            final iconStr = item['icon'] as String?;
+            final icon = (_useIconForOption && iconStr != null && iconStr.isNotEmpty)
+                ? iconFromString(iconStr)
+                : null;
+            return DropdownMenuItem<String>(
+              value: payload,
+              child: Row(
+                children: [
+                  if (icon != null) ...[
+                    Icon(icon, size: 16, color: const Color(0xFF1E88E5)),
+                    const SizedBox(width: 8),
+                  ],
+                  Expanded(
+                    child: Text(
+                      label,
+                      style: const TextStyle(fontSize: 13),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }).toList(),
+          onChanged: ok
+              ? (val) {
+            if (val == null) return;
+            setState(() {
+              _selected = val;
+              if (_showSentTimestamp) _lastSentTime = DateTime.now();
+            });
+            widget.mqtt.publish(
+              widget.topic,
+              buildJsonPayload(val, jsonPattern),
+              qos: widget.qos,
+              retain: _retain,
+            );
+          }
+              : null,
+        ),
+        if (_showSentTimestamp && _lastSentTime != null) ...[
+          const SizedBox(height: 4),
+          Text(
+            '↑ ${_formatTime(_lastSentTime!)}',
+            style: const TextStyle(fontSize: 10, color: Colors.black45),
+          ),
+        ],
+        if (_showReceivedTimestamp && _lastReceivedTime != null) ...[
+          const SizedBox(height: 2),
+          Text(
+            '↓ ${_formatTime(_lastReceivedTime!)}',
+            style: const TextStyle(fontSize: 10, color: Colors.black45),
+          ),
+        ],
+      ],
     );
   }
 }

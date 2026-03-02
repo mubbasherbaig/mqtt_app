@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../services/mqtt_service.dart';
+import '../../services/notification_service.dart';
 import '../../utils/json_utils.dart';
 
 class LiveNodeStatusPanel extends StatefulWidget {
@@ -21,12 +22,26 @@ class LiveNodeStatusPanel extends StatefulWidget {
 class _LiveNodeStatusPanelState extends State<LiveNodeStatusPanel> {
   String _lastPayload = '';
   VoidCallback? _unsub;
+  DateTime? _lastReceivedTime;
+  DateTime? _lastSentTime;
 
   String get _payloadOnline =>
       widget.panel['payloadOnline'] as String? ?? 'online';
-
   bool get _isOnline => _lastPayload == _payloadOnline;
   bool get _hasReceived => _lastPayload.isNotEmpty;
+  bool get _showReceivedTimestamp =>
+      widget.panel['showReceivedTimestamp'] == true;
+  bool get _showSentTimestamp => widget.panel['showSentTimestamp'] == true;
+
+  bool get _enableNotification => widget.panel['enableNotification'] == true;
+
+  String get _panelName =>
+      widget.panel['label'] as String? ??
+          widget.panel['panelName'] as String? ??
+          'Node Status';
+
+  String _formatTime(DateTime t) =>
+      '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}:${t.second.toString().padLeft(2, '0')}';
 
   @override
   void initState() {
@@ -36,6 +51,9 @@ class _LiveNodeStatusPanelState extends State<LiveNodeStatusPanel> {
       final syncPayload = widget.panel['payloadSyncRequest'] as String? ?? '';
       if (syncPayload.isNotEmpty && widget.mqtt.isConnected) {
         widget.mqtt.publish(widget.topic, syncPayload);
+        if (_showSentTimestamp) {
+          setState(() => _lastSentTime = DateTime.now());
+        }
       }
     }
   }
@@ -45,7 +63,18 @@ class _LiveNodeStatusPanelState extends State<LiveNodeStatusPanel> {
       if (!mounted) return;
       final jsonPath = widget.panel['jsonPath'] as String? ?? '';
       final extracted = extractJsonValue(payload, jsonPath);
-      setState(() => _lastPayload = extracted);
+      final wasOnline = _isOnline;
+      setState(() {
+        _lastPayload = extracted;
+        if (_showReceivedTimestamp) _lastReceivedTime = DateTime.now();
+      });
+      // Notify only on Online → Offline transition
+      if (_enableNotification && wasOnline && extracted != _payloadOnline) {
+        NotificationService.show(
+          title: _panelName,
+          body: 'Device went OFFLINE on ${widget.topic}',
+        );
+      }
     });
   }
 
@@ -103,15 +132,30 @@ class _LiveNodeStatusPanelState extends State<LiveNodeStatusPanel> {
         Text(
           statusText,
           style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: dotColor),
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: dotColor,
+          ),
         ),
         if (_hasReceived && _lastPayload.isNotEmpty) ...[
           const SizedBox(height: 2),
           Text(
             _lastPayload,
             style: const TextStyle(fontSize: 10, color: Colors.black38),
+          ),
+        ],
+        if (_showSentTimestamp && _lastSentTime != null) ...[
+          const SizedBox(height: 2),
+          Text(
+            '↑ ${_formatTime(_lastSentTime!)}',
+            style: const TextStyle(fontSize: 10, color: Colors.black45),
+          ),
+        ],
+        if (_showReceivedTimestamp && _lastReceivedTime != null) ...[
+          const SizedBox(height: 2),
+          Text(
+            '↓ ${_formatTime(_lastReceivedTime!)}',
+            style: const TextStyle(fontSize: 10, color: Colors.black45),
           ),
         ],
       ],

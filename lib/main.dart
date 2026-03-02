@@ -1,21 +1,21 @@
-// lib/main.dart
-
 import 'package:flutter/material.dart';
 import 'package:mqtt_app/screens/app_settings.dart';
 import 'package:provider/provider.dart';
 import 'screens/connections_screen.dart';
 import 'services/storage_service.dart';
 import 'services/multi_mqtt_service.dart';
+import 'services/notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await StorageService.init();
+  await NotificationService.init();
 
   final appSettings = AppSettings();
   await appSettings.init();
 
   final mqttService = MultiMqttService();
-  // Auto-connect to ALL previously active brokers on every app launch
+
   await mqttService.init();
 
   runApp(
