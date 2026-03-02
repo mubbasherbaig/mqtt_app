@@ -64,6 +64,7 @@ class _AddProgressPanelScreenState extends State<AddProgressPanelScreen> {
       final iconStr = d['icon'] as String?;
       if (iconStr != null) _panelIcon = iconFromString(iconStr) ?? Icons.widgets_outlined;
       _jsonPathCtrl.text    = d['jsonPath'] as String? ?? '';
+      _enableNotification = d['enableNotification'] == true;
     }
   }
 
@@ -145,7 +146,7 @@ class _AddProgressPanelScreenState extends State<AddProgressPanelScreen> {
         'payloadIsJson': _payloadIsJson,
         'showReceivedTimestamp': _showReceivedTimestamp,
         'jsonPath':    _jsonPathCtrl.text.trim(),
-
+        'enableNotification': _enableNotification,
       });
     }
   }
@@ -596,6 +597,11 @@ class _AddProgressPanelScreenState extends State<AddProgressPanelScreen> {
               l.dynamicColor,
               _dynamicColor,
               (v) => setState(() => _dynamicColor = v),
+            ),
+            _checkRow(
+              l.enableNotification,
+              _enableNotification,
+                  (v) => setState(() => _enableNotification = v),
             ),
             _checkRow(
               l.payloadIsJson,

@@ -156,8 +156,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
 
     if (result != null) {
-      await StorageService.addDashboard(widget.connectionIndex, result);
-      setState(() => _reloadDashboards());
+      final newIndex = await StorageService.addDashboard(widget.connectionIndex, result);
+      setState(() {
+        _reloadDashboards();
+        if (newIndex >= 0) _currentTab = newIndex;  // ← jump to new dashboard
+      });
     }
   }
 
@@ -370,8 +373,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     value: 'reconnect', child: Text('Reconnect')),
                 const PopupMenuItem(
                     value: 'disconnect', child: Text('Disconnect')),
-                PopupMenuItem(
-                    value: 'settings', child: Text(l.connectionSettings)),
+                // PopupMenuItem(
+                //     value: 'settings', child: Text(l.connectionSettings)),
               ],
             ),
           ),
@@ -599,7 +602,9 @@ class _DuplicatePanelSheet extends StatelessWidget {
 // FAB Row — four buttons side by side at bottom right
 // ─────────────────────────────────────────────────────────────
 
-class _FabRow extends StatelessWidget {
+// Replace the _FabRow class in dashboard_screen.dart with this
+
+class _FabRow extends StatefulWidget {
   final VoidCallback onAdd;
   final VoidCallback onDuplicate;
   final VoidCallback onBackup;
@@ -613,64 +618,155 @@ class _FabRow extends StatelessWidget {
   });
 
   @override
+  State<_FabRow> createState() => _FabRowState();
+}
+
+class _FabRowState extends State<_FabRow> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  bool _open = false;
+
+  static const _items = [
+    _SpeedDialItem(icon: Icons.download_outlined,  color: Color(0xFFFF8F00), label: 'Import Backup',   tag: 'restore'),
+    _SpeedDialItem(icon: Icons.upload_outlined,    color: Color(0xFF43A047), label: 'Export Backup',   tag: 'backup'),
+    _SpeedDialItem(icon: Icons.copy_outlined,      color: Color(0xFF8E24AA), label: 'Duplicate Panel', tag: 'duplicate'),
+    _SpeedDialItem(icon: Icons.add,                color: Color(0xFF1E88E5), label: 'Add Panel',       tag: 'add'),
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 280),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _toggle() {
+    setState(() => _open = !_open);
+    _open ? _controller.forward() : _controller.reverse();
+  }
+
+  void _onTap(String tag) {
+    _toggle();
+    switch (tag) {
+      case 'add':       widget.onAdd();       break;
+      case 'duplicate': widget.onDuplicate(); break;
+      case 'backup':    widget.onBackup();    break;
+      case 'restore':   widget.onRestore();   break;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.end,
+    const fabSize = 48.0;
+    const spacing = 12.0;
+
+    return Column(
       mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.end,
       children: [
-        // Restore button
-        Tooltip(
-          message: 'Import Backup',
+        // All 4 action items fan upward
+        ..._items.asMap().entries.map((e) {
+          final idx = e.key;
+          final item = e.value;
+          final staggered = CurvedAnimation(
+            parent: _controller,
+            curve: Interval(idx * 0.08, 1.0, curve: Curves.easeOutBack),
+          );
+          return AnimatedBuilder(
+            animation: staggered,
+            builder: (_, __) {
+              final v = staggered.value;
+              return Opacity(
+                opacity: v.clamp(0.0, 1.0),
+                child: Transform.translate(
+                  offset: Offset(0, (1 - v) * 20),
+                  child: Padding(
+                    padding: const EdgeInsets.only(bottom: spacing),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Label chip
+                        if (v > 0.3)
+                          Opacity(
+                            opacity: ((v - 0.3) / 0.7).clamp(0.0, 1.0),
+                            child: Container(
+                              margin: const EdgeInsets.only(right: 10),
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                              decoration: BoxDecoration(
+                                color: Colors.black87,
+                                borderRadius: BorderRadius.circular(6),
+                                boxShadow: const [
+                                  BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(0, 2)),
+                                ],
+                              ),
+                              child: Text(
+                                item.label,
+                                style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w500),
+                              ),
+                            ),
+                          ),
+                        // Mini FAB
+                        SizedBox(
+                          width: fabSize,
+                          height: fabSize,
+                          child: FloatingActionButton(
+                            heroTag: 'fab_${item.tag}',
+                            backgroundColor: item.color,
+                            elevation: 4,
+                            onPressed: () => _onTap(item.tag),
+                            child: Icon(item.icon, color: Colors.white, size: 20),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          );
+        }),
+
+        // Main trigger FAB — toggles open/close
+        SizedBox(
+          width: fabSize + 8,
+          height: fabSize + 8,
           child: FloatingActionButton(
-            heroTag: 'fab_restore',
-            mini: true,
-            backgroundColor: Colors.orange,
-            onPressed: onRestore,
-            child: const Icon(Icons.download_outlined,
-                color: Colors.white, size: 20),
-          ),
-        ),
-        const SizedBox(width: 8),
-        // Backup button
-        Tooltip(
-          message: 'Export Backup',
-          child: FloatingActionButton(
-            heroTag: 'fab_backup',
-            mini: true,
-            backgroundColor: const Color(0xFF43A047),
-            onPressed: onBackup,
-            child: const Icon(Icons.upload_outlined,
-                color: Colors.white, size: 20),
-          ),
-        ),
-        const SizedBox(width: 8),
-        // Duplicate panel button
-        Tooltip(
-          message: 'Duplicate Panel',
-          child: FloatingActionButton(
-            heroTag: 'fab_duplicate',
-            mini: true,
-            backgroundColor: const Color(0xFF8E24AA),
-            onPressed: onDuplicate,
-            child: const Icon(Icons.copy_outlined,
-                color: Colors.white, size: 20),
-          ),
-        ),
-        const SizedBox(width: 8),
-        // Add panel button (primary)
-        Tooltip(
-          message: 'Add Panel',
-          child: FloatingActionButton(
-            heroTag: 'fab_add',
-            mini: true,
+            heroTag: 'fab_main',
             backgroundColor: const Color(0xFF1E88E5),
-            onPressed: onAdd,
-            child: const Icon(Icons.add, color: Colors.white, size: 22),
+            elevation: 6,
+            onPressed: _toggle,
+            child: AnimatedBuilder(
+              animation: _controller,
+              builder: (_, __) => Transform.rotate(
+                angle: _controller.value * 0.785398, // 45°
+                child: const Icon(Icons.add, color: Colors.white, size: 26),
+              ),
+            ),
           ),
         ),
       ],
     );
   }
+}
+
+class _SpeedDialItem {
+  final IconData icon;
+  final Color color;
+  final String label;
+  final String tag;
+  const _SpeedDialItem({
+    required this.icon,
+    required this.color,
+    required this.label,
+    required this.tag,
+  });
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -855,7 +951,6 @@ class _DashboardTabBodyState extends State<_DashboardTabBody> {
         old.dashboardIndex != widget.dashboardIndex) {
       _loadPanels();
     }
-    _loadPanels();
   }
 
   void _loadPanels() {

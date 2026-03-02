@@ -51,6 +51,7 @@ class _AddImagePanelScreenState extends State<AddImagePanelScreen> {
       _qos = int.tryParse(d['qos']?.toString() ?? '0') ?? 0;
       final iconStr = d['icon'] as String?;
       if (iconStr != null) _panelIcon = iconFromString(iconStr) ?? Icons.widgets_outlined;
+      _enableNotification = d['enableNotification'] == true;
     }
   }
 
@@ -75,6 +76,7 @@ class _AddImagePanelScreenState extends State<AddImagePanelScreen> {
         'disableDashboardPrefix': _disableDashboardPrefix,
         'payloadIsJson': _payloadIsJson,
         'showReceivedTimestamp': _showReceivedTimestamp,
+        'enableNotification': _enableNotification,
       });
     }
   }
@@ -335,6 +337,11 @@ class _AddImagePanelScreenState extends State<AddImagePanelScreen> {
               l.fitToPanelWidth,
               _fitToPanelWidth,
               (v) => setState(() => _fitToPanelWidth = v),
+            ),
+            _check(
+              l.enableNotification,
+              _enableNotification,
+                  (v) => setState(() => _enableNotification = v),
             ),
             _check(
               l.payloadIsJson,

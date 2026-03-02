@@ -5,18 +5,21 @@ import 'screens/connections_screen.dart';
 import 'services/storage_service.dart';
 import 'services/multi_mqtt_service.dart';
 import 'services/notification_service.dart';
+import 'services/background_mqtt_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await StorageService.init();
   await NotificationService.init();
+  await initBackgroundService();   // register channels + configure service
 
   final appSettings = AppSettings();
   await appSettings.init();
 
   final mqttService = MultiMqttService();
+  await mqttService.init();        // UI-side MQTT connections (for live panels)
 
-  await mqttService.init();
+  await startBackgroundKeepAlive(); // start bg isolate — owns its own MQTT + notifications
 
   runApp(
     MultiProvider(
@@ -52,7 +55,7 @@ class _MqttAppState extends State<MqttApp> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      debugPrint('[App] Resumed — reconnecting all brokers...');
+      debugPrint('[App] Resumed — reconnecting UI MQTT');
       Future.delayed(const Duration(milliseconds: 300), () {
         if (mounted) context.read<MultiMqttService>().resumeAll();
       });

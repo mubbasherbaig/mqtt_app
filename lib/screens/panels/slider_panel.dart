@@ -67,6 +67,7 @@ class _AddSliderPanelScreenState extends State<AddSliderPanelScreen> {
       _retain = d['retain'] == true;
       _qos = int.tryParse(d['qos']?.toString() ?? '0') ?? 0;
       _orientation = d['orientation'] as String? ?? 'Horizontal';
+      _enableNotification = d['enableNotification'] == true;
       final colorVal = int.tryParse(d['sliderColor']?.toString() ?? '');
       if (colorVal != null) _sliderColor = Color(colorVal);
       final iconStr = d['icon'] as String?;
@@ -164,6 +165,7 @@ class _AddSliderPanelScreenState extends State<AddSliderPanelScreen> {
         'showSentTimestamp': _showSentTimestamp,
         'jsonPath':    _jsonPathCtrl.text.trim(),
         'jsonPattern': _jsonPatternCtrl.text.trim(),
+        'enableNotification': _enableNotification,
       });
     }
   }
@@ -483,12 +485,17 @@ class _AddSliderPanelScreenState extends State<AddSliderPanelScreen> {
               _dynamicColor,
               (v) => setState(() => _dynamicColor = v),
             ),
+            // _checkRow(
+            //   l.enableNotification,
+            //   _enableNotification,
+            //   (v) => setState(() => _enableNotification = v),
+            //   showHelp: true,
+            //   enabled: _dynamicColor,
+            // ),
             _checkRow(
               l.enableNotification,
               _enableNotification,
-              (v) => setState(() => _enableNotification = v),
-              showHelp: true,
-              enabled: _dynamicColor,
+                  (v) => setState(() => _enableNotification = v),
             ),
             _checkRow(
               l.payloadIsJson,

@@ -49,6 +49,12 @@ class _LiveComboBoxPanelState extends State<LiveComboBoxPanel> {
     return (sub != null && sub.isNotEmpty) ? sub : widget.topic;
   }
 
+  // Notification only fires if subscribeTopic is explicitly different from publish topic
+  bool get _hasSeparateSubTopic {
+    final sub = widget.panel['subscribeTopic'] as String? ?? '';
+    return sub.trim().isNotEmpty && sub.trim() != widget.topic;
+  }
+
   String _formatTime(DateTime t) =>
       '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}:${t.second.toString().padLeft(2, '0')}';
 
@@ -68,7 +74,7 @@ class _LiveComboBoxPanelState extends State<LiveComboBoxPanel> {
           _selected = extracted;
           if (_showReceivedTimestamp) _lastReceivedTime = DateTime.now();
         });
-        if (_enableNotification) {
+        if (_enableNotification && _hasSeparateSubTopic) {
           final label = match['label']?.toString() ?? extracted;
           NotificationService.show(
             title: _panelName,
@@ -106,7 +112,6 @@ class _LiveComboBoxPanelState extends State<LiveComboBoxPanel> {
           items: _items.map((item) {
             final payload = item['payload']?.toString() ?? '';
             final label = item['label']?.toString() ?? payload;
-            // useIconForOption: items may carry an 'icon' string key
             final iconStr = item['icon'] as String?;
             final icon = (_useIconForOption && iconStr != null && iconStr.isNotEmpty)
                 ? iconFromString(iconStr)

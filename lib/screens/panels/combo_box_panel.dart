@@ -37,7 +37,7 @@ class _AddComboBoxPanelScreenState extends State<AddComboBoxPanelScreen> {
   // Dynamic items list — starts with 2 items
   final List<Map<String, TextEditingController>> _items = [];
 
-  final _jsonPathCtrl    = TextEditingController();
+  final _jsonPathCtrl = TextEditingController();
   final _jsonPatternCtrl = TextEditingController();
 
   @override
@@ -56,10 +56,12 @@ class _AddComboBoxPanelScreenState extends State<AddComboBoxPanelScreen> {
       _showSentTimestamp = d['showSentTimestamp'] == true;
       _retain = d['retain'] == true;
       _qos = int.tryParse(d['qos']?.toString() ?? '0') ?? 0;
+      _enableNotification = d['enableNotification'] == true;
       final iconStr = d['icon'] as String?;
-      if (iconStr != null)
+      if (iconStr != null) {
         _panelIcon = iconFromString(iconStr) ?? Icons.widgets_outlined;
-      _jsonPathCtrl.text    = d['jsonPath'] as String? ?? '';
+      }
+      _jsonPathCtrl.text = d['jsonPath'] as String? ?? '';
       _jsonPatternCtrl.text = d['jsonPattern'] as String? ?? '';
       final savedItems = d['items'];
       if (savedItems is List && savedItems.isNotEmpty) {
@@ -127,8 +129,9 @@ class _AddComboBoxPanelScreenState extends State<AddComboBoxPanelScreen> {
         'payloadIsJson': _payloadIsJson,
         'showReceivedTimestamp': _showReceivedTimestamp,
         'showSentTimestamp': _showSentTimestamp,
-        'jsonPath':    _jsonPathCtrl.text.trim(),
+        'jsonPath': _jsonPathCtrl.text.trim(),
         'jsonPattern': _jsonPatternCtrl.text.trim(),
+        'enableNotification': _enableNotification,
       });
     }
   }
@@ -397,7 +400,11 @@ class _AddComboBoxPanelScreenState extends State<AddComboBoxPanelScreen> {
                 _divider(),
               ],
             ),
-
+            _checkRow(
+              l.enableNotification,
+              _enableNotification,
+              (v) => setState(() => _enableNotification = v),
+            ),
             _checkRow(
               l.payloadIsJson,
               _payloadIsJson,

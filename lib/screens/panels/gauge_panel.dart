@@ -72,7 +72,7 @@ class _AddGaugePanelScreenState extends State<AddGaugePanelScreen> {
       if (iconStr != null)
         _panelIcon = iconFromString(iconStr) ?? Icons.widgets_outlined;
       _jsonPathCtrl.text    = d['jsonPath'] as String? ?? '';
-
+      _enableNotification = d['enableNotification'] == true;
     }
   }
 
@@ -159,6 +159,7 @@ class _AddGaugePanelScreenState extends State<AddGaugePanelScreen> {
         'threshold1': _threshold1Ctrl.text.trim(),
         'threshold2': _threshold2Ctrl.text.trim(),
         'jsonPath':    _jsonPathCtrl.text.trim(),
+        'enableNotification': _enableNotification,
 
       });
     }
@@ -581,6 +582,11 @@ class _AddGaugePanelScreenState extends State<AddGaugePanelScreen> {
             ),
 
             _fieldRow(l.unit, _unitCtrl),
+            _checkRow(
+              l.enableNotification,
+              _enableNotification,
+                  (v) => setState(() => _enableNotification = v),
+            ),
             _checkRow(
               l.payloadIsJson,
               _payloadIsJson,

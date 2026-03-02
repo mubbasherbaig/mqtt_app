@@ -24,6 +24,7 @@ class LiveSliderPanel extends StatefulWidget {
 class _LiveSliderPanelState extends State<LiveSliderPanel> {
   late double _value;
   VoidCallback? _unsub;
+  VoidCallback? _notifUnsub;
   DateTime? _lastReceivedTime;
   DateTime? _lastSentTime;
 
@@ -55,6 +56,12 @@ class _LiveSliderPanelState extends State<LiveSliderPanel> {
           widget.panel['panelName'] as String? ??
           'Slider';
 
+  // Separate subscribe topic — used for incoming value display AND notifications
+  String get _subTopic {
+    final sub = widget.panel['subscribeTopic'] as String? ?? '';
+    return sub.trim();
+  }
+
   String get _orientation =>
       widget.panel['orientation'] as String? ??
           widget.panel['sliderOrientation'] as String? ??
@@ -64,7 +71,6 @@ class _LiveSliderPanelState extends State<LiveSliderPanel> {
 
   Color get _sliderColor {
     if (_dynamicColor) {
-      // Green → Yellow → Red as value increases
       final pct = (_max == _min)
           ? 0.0
           : ((_value - _min) / (_max - _min)).clamp(0.0, 1.0);
@@ -97,6 +103,7 @@ class _LiveSliderPanelState extends State<LiveSliderPanel> {
   }
 
   void _subscribe() {
+    // Always subscribe to publish topic to sync slider position
     _unsub = widget.mqtt.subscribe(widget.topic, (payload) {
       final jsonPath = widget.panel['jsonPath'] as String? ?? '';
       final extracted = extractJsonValue(payload, jsonPath);
@@ -106,14 +113,28 @@ class _LiveSliderPanelState extends State<LiveSliderPanel> {
           _value = v.clamp(_min, _max);
           if (_showReceivedTimestamp) _lastReceivedTime = DateTime.now();
         });
-        if (_enableNotification) {
-          NotificationService.show(
-            title: _panelName,
-            body: '$_displayValue received on ${widget.topic}',
-          );
-        }
       }
     });
+
+    // Only subscribe for notifications on a SEPARATE subscribeTopic
+    // This avoids echo notifications when the user moves the slider
+    if (_enableNotification && _subTopic.isNotEmpty) {
+      _notifUnsub = widget.mqtt.subscribe(_subTopic, (payload) {
+        if (!mounted) return;
+        final jsonPath = widget.panel['jsonPath'] as String? ?? '';
+        final extracted = extractJsonValue(payload, jsonPath);
+        final v = double.tryParse(extracted);
+        if (v != null) {
+          final display = _decimals > 0
+              ? v.toStringAsFixed(_decimals)
+              : v.toInt().toString();
+          NotificationService.show(
+            title: _panelName,
+            body: '$display received on $_subTopic',
+          );
+        }
+      });
+    }
   }
 
   @override
@@ -121,6 +142,7 @@ class _LiveSliderPanelState extends State<LiveSliderPanel> {
     super.didUpdateWidget(old);
     if (old.topic != widget.topic) {
       _unsub?.call();
+      _notifUnsub?.call();
       _subscribe();
     }
   }
@@ -128,6 +150,7 @@ class _LiveSliderPanelState extends State<LiveSliderPanel> {
   @override
   void dispose() {
     _unsub?.call();
+    _notifUnsub?.call();
     super.dispose();
   }
 
@@ -206,17 +229,11 @@ class _LiveSliderPanelState extends State<LiveSliderPanel> {
                   children: [
                     Text(
                       _max.toStringAsFixed(_decimals),
-                      style: const TextStyle(
-                        fontSize: 10,
-                        color: Colors.black38,
-                      ),
+                      style: const TextStyle(fontSize: 10, color: Colors.black38),
                     ),
                     Text(
                       _min.toStringAsFixed(_decimals),
-                      style: const TextStyle(
-                        fontSize: 10,
-                        color: Colors.black38,
-                      ),
+                      style: const TextStyle(fontSize: 10, color: Colors.black38),
                     ),
                   ],
                 ),

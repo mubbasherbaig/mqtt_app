@@ -38,8 +38,8 @@ class _LiveRadioButtonsPanelState extends State<LiveRadioButtonsPanel> {
 
   String get _panelName =>
       widget.panel['label'] as String? ??
-      widget.panel['panelName'] as String? ??
-      'Radio Buttons';
+          widget.panel['panelName'] as String? ??
+          'Radio Buttons';
 
   List<Map<String, dynamic>> get _items {
     final raw = widget.panel['items'];
@@ -50,6 +50,12 @@ class _LiveRadioButtonsPanelState extends State<LiveRadioButtonsPanel> {
   String get _subTopic {
     final sub = widget.panel['subscribeTopic'] as String?;
     return (sub != null && sub.isNotEmpty) ? sub : widget.topic;
+  }
+
+  // Notification only fires if subscribeTopic is explicitly different from publish topic
+  bool get _hasSeperatSubTopic {
+    final sub = widget.panel['subscribeTopic'] as String? ?? '';
+    return sub.trim().isNotEmpty && sub.trim() != widget.topic;
   }
 
   String _formatTime(DateTime t) =>
@@ -67,9 +73,9 @@ class _LiveRadioButtonsPanelState extends State<LiveRadioButtonsPanel> {
           _selected = extracted;
           if (_showReceivedTimestamp) _lastReceivedTime = DateTime.now();
         });
-        if (_enableNotification) {
+        if (_enableNotification && _hasSeperatSubTopic) {
           final matched = _items.firstWhere(
-            (i) => i['payload']?.toString() == extracted,
+                (i) => i['payload']?.toString() == extracted,
             orElse: () => {},
           );
           final label = matched['label']?.toString() ?? extracted;
@@ -133,8 +139,8 @@ class _LiveRadioButtonsPanelState extends State<LiveRadioButtonsPanel> {
                       activeColor: const Color(0xFF1E88E5),
                       onChanged: ok
                           ? (v) {
-                              if (v != null) _select(v);
-                            }
+                        if (v != null) _select(v);
+                      }
                           : null,
                     ),
                     Expanded(

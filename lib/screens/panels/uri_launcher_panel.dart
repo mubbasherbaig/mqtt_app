@@ -52,6 +52,7 @@ class _AddUriLauncherPanelScreenState extends State<AddUriLauncherPanelScreen> {
       if (iconStr != null) _panelIcon = iconFromString(iconStr) ?? Icons.widgets_outlined;
       _subscribeTopicCtrl.text = d['subscribeTopic'] as String? ?? '';
       _jsonPathCtrl.text    = d['jsonPath'] as String? ?? '';
+      _enableNotification = d['enableNotification'] == true;
     }
   }
 
@@ -78,6 +79,7 @@ class _AddUriLauncherPanelScreenState extends State<AddUriLauncherPanelScreen> {
         'showReceivedTimestamp': _showReceivedTimestamp,
         'subscribeTopic': _subscribeTopicCtrl.text.trim(),
         'jsonPath':    _jsonPathCtrl.text.trim(),
+        'enableNotification': _enableNotification,
       });
     }
   }
@@ -280,6 +282,11 @@ class _AddUriLauncherPanelScreenState extends State<AddUriLauncherPanelScreen> {
               l.staticUrl,
               _staticUrl,
               (v) => setState(() => _staticUrl = v),
+            ),
+            _check(
+              l.enableNotification,
+              _enableNotification,
+                  (v) => setState(() => _enableNotification = v),
             ),
             _check(
               l.payloadIsJson,

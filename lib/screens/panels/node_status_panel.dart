@@ -65,6 +65,7 @@ class _AddNodeStatusPanelScreenState extends State<AddNodeStatusPanelScreen> {
       final iconStr = d['icon'] as String?;
       if (iconStr != null) _panelIcon = iconFromString(iconStr) ?? Icons.widgets_outlined;
       _jsonPathCtrl.text    = d['jsonPath'] as String? ?? '';
+      _enableNotification = d['enableNotification'] == true;
     }
   }
 
@@ -93,7 +94,6 @@ class _AddNodeStatusPanelScreenState extends State<AddNodeStatusPanelScreen> {
         'icon': iconToString(_panelIcon),
         'onlineIconColor': _onlineIconColor.value.toString(),
         'offlineIconColor': _offlineIconColor.value.toString(),
-        // Fixed: Adding missing toggles
         'disableDashboardPrefix': _disableDashboardPrefix,
         'autoSyncOnLoad': _autoSyncOnLoad,
         'payloadIsJson': _payloadIsJson,
@@ -102,6 +102,7 @@ class _AddNodeStatusPanelScreenState extends State<AddNodeStatusPanelScreen> {
         'retain': _retain,
         'qos': _qos,
         'jsonPath':    _jsonPathCtrl.text.trim(),
+        'enableNotification': _enableNotification,
       });
     }
   }
@@ -463,6 +464,11 @@ class _AddNodeStatusPanelScreenState extends State<AddNodeStatusPanelScreen> {
               l.autoSyncOnLoad,
               _autoSyncOnLoad,
               (v) => setState(() => _autoSyncOnLoad = v),
+            ),
+            _checkRow(
+              l.enableNotification,
+              _enableNotification,
+                  (v) => setState(() => _enableNotification = v),
             ),
             _checkRow(
               l.payloadIsJson,

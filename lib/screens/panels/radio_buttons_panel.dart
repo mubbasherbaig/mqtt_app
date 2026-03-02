@@ -63,6 +63,7 @@ class _AddRadioButtonsPanelScreenState
       if (iconStr != null) {
         _panelIcon = iconFromString(iconStr) ?? Icons.widgets_outlined;
       }
+      _enableNotification = d['enableNotification'] == true;
       _jsonPathCtrl.text    = d['jsonPath'] as String? ?? '';
       _jsonPatternCtrl.text = d['jsonPattern'] as String? ?? '';
       final savedItems = d['items'];
@@ -130,6 +131,7 @@ class _AddRadioButtonsPanelScreenState
         'qos': _qos,
         'jsonPath':    _jsonPathCtrl.text.trim(),
         'jsonPattern': _jsonPatternCtrl.text.trim(),
+        'enableNotification': _enableNotification,
       });
     }
   }
@@ -394,7 +396,11 @@ class _AddRadioButtonsPanelScreenState
                 _divider(),
               ],
             ),
-
+            _checkRow(
+              l.enableNotification,
+              _enableNotification,
+                  (v) => setState(() => _enableNotification = v),
+            ),
             _checkRow(
               l.payloadIsJson,
               _payloadIsJson,

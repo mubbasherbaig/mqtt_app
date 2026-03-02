@@ -56,6 +56,7 @@ class _AddMultiStateIndicatorPanelScreenState
       _iconSize = d['iconSize'] as String? ?? 'Small';
       _qos = int.tryParse(d['qos']?.toString() ?? '0') ?? 0;
       final iconStr = d['icon'] as String?;
+      _enableNotification = d['enableNotification'] == true;
       if (iconStr != null) _panelIcon = iconFromString(iconStr) ?? Icons.widgets_outlined;
       _jsonPathCtrl.text    = d['jsonPath'] as String? ?? '';
       final savedItems = d['items'];
@@ -134,7 +135,6 @@ class _AddMultiStateIndicatorPanelScreenState
               },
             )
             .toList(),
-        // ADD THESE MISSING FIELDS:
         'disableDashboardPrefix': _disableDashboardPrefix,
         'payloadIsJson': _payloadIsJson,
         'showReceivedTimestamp': _showReceivedTimestamp,
@@ -142,6 +142,7 @@ class _AddMultiStateIndicatorPanelScreenState
         'retain': _retain,
         'qos': _qos,
         'jsonPath':    _jsonPathCtrl.text.trim(),
+        'enableNotification': _enableNotification,
       });
     }
   }
@@ -515,7 +516,11 @@ class _AddMultiStateIndicatorPanelScreenState
                 _divider(),
               ],
             ),
-
+            _checkRow(
+              l.enableNotification,
+              _enableNotification,
+                  (v) => setState(() => _enableNotification = v),
+            ),
             _checkRow(
               l.payloadIsJson,
               _payloadIsJson,

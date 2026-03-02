@@ -23,6 +23,7 @@ class _AddLedIndicatorPanelScreenState
   final _payloadOffCtrl = TextEditingController();
   bool get _isEditing => widget.initialData != null;
 
+  bool _enableNotification = false;
   IconData _panelIcon = Icons.widgets_outlined;
 
   bool _disableDashboardPrefix = true;
@@ -50,6 +51,7 @@ class _AddLedIndicatorPanelScreenState
       _payloadOffCtrl.text = d['payloadOff'] as String? ?? '';
       _disableDashboardPrefix = d['disableDashboardPrefix'] == true;
       _payloadIsJson = d['payloadIsJson'] == true;
+      _enableNotification = d['enableNotification'] == true;
       _showReceivedTimestamp = d['showReceivedTimestamp'] == true;
       _iconSize = d['iconSize'] as String? ?? 'Small';
       _qos = int.tryParse(d['qos']?.toString() ?? '0') ?? 0;
@@ -144,7 +146,7 @@ class _AddLedIndicatorPanelScreenState
         'payloadIsJson': _payloadIsJson,
         'showReceivedTimestamp': _showReceivedTimestamp,
         'jsonPath':    _jsonPathCtrl.text.trim(),
-
+        'enableNotification': _enableNotification,
       });
     }
   }
@@ -415,7 +417,11 @@ class _AddLedIndicatorPanelScreenState
                 _divider(),
               ],
             ),
-
+            _checkRow(
+              l.enableNotification,
+              _enableNotification,
+                  (v) => setState(() => _enableNotification = v),
+            ),
             _checkRow(
               l.payloadIsJson,
               _payloadIsJson,
